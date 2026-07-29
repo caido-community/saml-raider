@@ -1,46 +1,53 @@
 import { Classic } from "@caido/primevue";
+import { type RequestViewModeOptions } from "@caido/sdk-frontend";
 import PrimeVue from "primevue/config";
-import { createApp } from "vue";
+import { createApp, markRaw } from "vue";
 
-import { SDKPlugin } from "./plugins/sdk";
+import { MessageView } from "./components/samlMessage/MessageView";
+import { isLikelySamlMessage } from "./core";
 import "./styles/index.css";
 import type { FrontendSDK } from "./types";
 import App from "./views/App.vue";
 
-// This is the entry point for the frontend plugin
+const registerViewModes = (sdk: FrontendSDK) => {
+  const options: RequestViewModeOptions = {
+    label: "SAML",
+    view: { component: markRaw(MessageView) },
+    when: (request) => isLikelySamlMessage(request.raw),
+  };
+
+  sdk.replay.addRequestViewMode(options);
+  sdk.intercept.addRequestViewMode(options);
+  sdk.httpHistory.addRequestViewMode(options);
+  sdk.search.addRequestViewMode(options);
+  sdk.sitemap.addRequestViewMode(options);
+  sdk.automate.addRequestViewMode(options);
+  sdk.findings.addRequestViewMode(options);
+};
+
 export const init = (sdk: FrontendSDK) => {
   const app = createApp(App);
 
-  // Load the PrimeVue component library
   app.use(PrimeVue, {
     unstyled: true,
     pt: Classic,
   });
 
-  // Provide the FrontendSDK
-  app.use(SDKPlugin, sdk);
-
-  // Create the root element for the app
   const root = document.createElement("div");
   Object.assign(root.style, {
     height: "100%",
     width: "100%",
   });
 
-  // Set the ID of the root element
-  // Replace this with the value of the prefixWrap plugin in caido.config.ts
-  // This is necessary to prevent styling conflicts between plugins
-  root.id = `plugin--frontend-vue`;
+  root.id = `plugin--${__PLUGIN_ID__}`;
 
-  // Mount the app to the root element
   app.mount(root);
 
-  // Add the page to the navigation
-  // Make sure to use a unique name for the page
-  sdk.navigation.addPage("/my-plugin", {
+  sdk.navigation.addPage(`/${__PLUGIN_ID__}`, {
     body: root,
   });
 
-  // Add a sidebar item
-  sdk.sidebar.registerItem("My Plugin", "/my-plugin");
+  sdk.sidebar.registerItem("SAML Raider", `/${__PLUGIN_ID__}`);
+
+  registerViewModes(sdk);
 };

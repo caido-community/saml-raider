@@ -15,6 +15,7 @@
     "@caido/sdk-frontend": "0.57.1",
     "@codemirror/view": "6.43.0",
     "backend": "workspace:*",
+    "happy-dom": "^20.11.1",
     "vue-tsc": "3.1.8"
   }
 }

@@ -34,6 +34,9 @@ export default defineConfig({
       },
       vite: {
         plugins: [vue()],
+        define: {
+          __PLUGIN_ID__: JSON.stringify(id),
+        },
         build: {
           rollupOptions: {
             external: [

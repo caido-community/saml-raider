@@ -1,27 +1,16 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import { ref } from "vue";
-
-import { useSDK } from "@/plugins/sdk";
-
-// Retrieve the SDK instance to interact with the backend
-const sdk = useSDK();
-
-const myVar = ref("Hello World");
-
-// Call the backend to generate a random string
-const onGenerateClick = async () => {
-  const result = await sdk.backend.generateRandomString(10);
-  myVar.value = result;
-};
+defineOptions({ name: "App" });
 </script>
 
 <template>
-  <div class="h-full flex justify-center items-center">
-    <div class="flex flex-col gap-1">
-      <Button label="Generate random string" @click="onGenerateClick" />
-      <InputText :model-value="myVar" readonly />
-    </div>
+  <div class="h-full flex flex-col items-center justify-center gap-3 p-4">
+    <i class="fas fa-shield-halved text-3xl text-surface-400 opacity-60" />
+    <h1 class="text-base font-bold text-surface-200">SAML Raider</h1>
+    <p class="max-w-md text-center text-sm text-surface-400">
+      Open a request carrying a SAML message in History, Replay, Intercept,
+      Search, Sitemap or Automate, then pick the
+      <span class="text-surface-200">SAML</span> view mode above the request to
+      decode and inspect it.
+    </p>
   </div>
 </template>
