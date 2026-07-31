@@ -3,10 +3,11 @@
 import { describe, expect, it } from "vitest";
 
 import { buildMessageState } from "./messageState";
+import { type DecodeOutcome, type SamlAnalysis } from "./types";
 
-import { type DecodeOutcome, type SamlAnalysis } from "@/types";
+import { MINIMAL_RESPONSE } from "@/tests/fixtures";
 
-const ASSERTION = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>https://idp.example.com</saml:Issuer><saml:Assertion ID="_a1"><saml:Subject><saml:NameID>alice@example.com</saml:NameID></saml:Subject></saml:Assertion></samlp:Response>`;
+const ASSERTION = MINIMAL_RESPONSE;
 
 const POST_BINDING: SamlAnalysis = {
   kind: "Parameter",
@@ -14,6 +15,7 @@ const POST_BINDING: SamlAnalysis = {
   value: "irrelevant",
   source: "Body",
   isSamlRequest: false,
+  isDuplicated: false,
 };
 
 const decoded = (xml: string): DecodeOutcome => ({

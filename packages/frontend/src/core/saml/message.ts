@@ -1,27 +1,37 @@
 import { decodeSamlParameter } from "./codec";
+import { type DecodeOutcome, type SamlAnalysis } from "./types";
 
-import { type DecodeOutcome, type SamlAnalysis } from "@/types";
-import { readBody } from "@/utils";
+import { decodeUri, isAbsent, readBody } from "@/utils";
 
 const buildUncompressedOutcome = (xml: string): DecodeOutcome => ({
   kind: "Ok",
   value: { xml, compression: "None" },
 });
 
-export const decodeMessage = async (
+const decodeWsFederation = (
+  value: string,
+  isUrlEncoded: boolean,
+): DecodeOutcome => {
+  if (!isUrlEncoded) return buildUncompressedOutcome(value);
+
+  const unescaped = decodeUri(value);
+  if (isAbsent(unescaped)) {
+    return { kind: "Failed", failure: { kind: "MalformedUrlEncoding" } };
+  }
+
+  return buildUncompressedOutcome(unescaped);
+};
+
+export const decodeMessage = (
   raw: string,
   analysis: SamlAnalysis,
-): Promise<DecodeOutcome> => {
+): DecodeOutcome => {
   switch (analysis.kind) {
     case "Soap":
       return buildUncompressedOutcome(readBody(raw));
 
     case "WsFederation":
-      return buildUncompressedOutcome(
-        analysis.isUrlEncoded
-          ? decodeURIComponent(analysis.value)
-          : analysis.value,
-      );
+      return decodeWsFederation(analysis.value, analysis.isUrlEncoded);
 
     case "Parameter":
       return decodeSamlParameter(analysis.value);

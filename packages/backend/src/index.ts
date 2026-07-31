@@ -1,5 +1,4 @@
-import type { DefineAPI, SDK } from "caido:plugin";
+import type { SDK } from "caido:plugin";
+import type { Spec } from "shared";
 
-export type API = DefineAPI<Record<string, never>>;
-
-export function init(_sdk: SDK<API>) {}
+export function init(_sdk: SDK<Spec>) {}

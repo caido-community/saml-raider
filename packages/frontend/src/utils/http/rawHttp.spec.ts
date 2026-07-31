@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   readBody,
   readFormParameter,
+  readFormParameters,
   readHeader,
   readQueryString,
 } from "./rawHttp";
@@ -89,5 +90,27 @@ describe("readFormParameter", () => {
       "POST / HTTP/1.1\r\nHost: a\r\n\r\nXSAMLResponse=nope&SAMLResponse=yes";
 
     expect(readFormParameter(raw, "SAMLResponse", "Body")).toBe("yes");
+  });
+});
+
+describe("readFormParameters", () => {
+  it("returns every occurrence in order", () => {
+    const raw =
+      "POST / HTTP/1.1\r\nHost: a\r\n\r\nSAMLResponse=first&x=1&SAMLResponse=second";
+
+    expect(readFormParameters(raw, "SAMLResponse", "Body")).toStrictEqual([
+      "first",
+      "second",
+    ]);
+  });
+
+  it("returns an empty list when absent, not undefined", () => {
+    expect(readFormParameters(CRLF, "nope", "Body")).toStrictEqual([]);
+  });
+
+  it("readFormParameter takes the first, which is what most parsers do", () => {
+    const raw = "POST / HTTP/1.1\r\nHost: a\r\n\r\nq=first&q=second";
+
+    expect(readFormParameter(raw, "q", "Body")).toBe("first");
   });
 });

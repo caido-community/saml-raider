@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { type EditorView } from "@codemirror/view";
 import SelectButton from "primevue/selectbutton";
+import { computed } from "vue";
 
 import Empty from "./Empty.vue";
+import { readMessageSource, type ViewModeProps } from "./source";
 import { useForm } from "./useForm";
 
 import { XmlView } from "@/components/common/XmlView";
@@ -10,9 +11,15 @@ import { MessageInfo } from "@/components/samlMessage/MessageInfo";
 
 defineOptions({ name: "MessageView", inheritAttrs: false });
 
-const { view = undefined } = defineProps<{ view?: EditorView }>();
+const {
+  request = undefined,
+  draft = undefined,
+  response = undefined,
+} = defineProps<ViewModeProps>();
 
-const { state, panel, panels, isWritable } = useForm(() => view);
+const source = computed(() => readMessageSource({ request, draft, response }));
+
+const { state, panel, panels, isWritable } = useForm(source);
 </script>
 
 <template>
@@ -39,7 +46,7 @@ const { state, panel, panels, isWritable } = useForm(() => view);
     </div>
 
     <div class="flex-1 min-h-0 min-w-0 overflow-y-auto">
-      <XmlView v-if="panel === 'Attacks'" :content="state.xml" wrap />
+      <XmlView v-if="panel === 'Attacks'" :content="state.xml" />
       <MessageInfo
         v-else
         :info="state.info"

@@ -16,10 +16,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
 
       - name: Install mise
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v4.2.3
 
       - name: Run validation (typecheck, lint, format, knip, test)
         run: mise run validate

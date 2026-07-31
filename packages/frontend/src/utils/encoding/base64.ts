@@ -1,4 +1,4 @@
-import { type Maybe } from "./optional";
+import { type Maybe } from "@/utils";
 
 export const decodeBase64 = (value: string): Maybe<Uint8Array> => {
   try {

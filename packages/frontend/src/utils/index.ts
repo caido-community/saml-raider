@@ -1,3 +1,3 @@
-export * from "./base64";
+export * from "./encoding";
+export * from "./http";
 export * from "./optional";
-export * from "./rawHttp";

@@ -7,7 +7,7 @@ const { group } = defineProps<{ group: InfoGroup }>();
 </script>
 
 <template>
-  <section class="border border-surface-700 rounded overflow-hidden">
+  <section class="h-full border border-surface-700 rounded overflow-hidden">
     <header
       class="px-2 py-1 text-xs font-bold uppercase tracking-wide text-surface-300 bg-surface-800/60"
     >

@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { analyzeSamlMessage, isLikelySamlMessage } from "./analyzer";
+import { analyzeSamlMessage, isSamlMessage } from "./analyzer";
 
-const request = (line: string, headers: string[], body = ""): string =>
-  [line, ...headers, "", body].join("\r\n");
+import {
+  buildRawRequest,
+  FORM_CONTENT_TYPE,
+  XML_CONTENT_TYPE,
+} from "@/tests/fixtures";
 
-const FORM = "Content-Type: application/x-www-form-urlencoded";
-const XML = "Content-Type: text/xml; charset=utf-8";
+const request = buildRawRequest;
+const FORM = FORM_CONTENT_TYPE;
+const XML = XML_CONTENT_TYPE;
 
 describe("branch 1: XML content type", () => {
   it("is Soap when an Assertion is present", () => {
@@ -170,8 +174,8 @@ describe("non-SAML traffic", () => {
   });
 });
 
-describe("isLikelySamlMessage", () => {
-  it("accepts every shape the analyzer accepts", () => {
+describe("isSamlMessage, which gates the view mode", () => {
+  it("accepts every shape the analyzer recognises", () => {
     const cases = [
       {
         raw: request("POST /acs HTTP/1.1", [FORM], "SAMLResponse=abc"),
@@ -196,33 +200,33 @@ describe("isLikelySamlMessage", () => {
     ];
 
     for (const { raw, kind } of cases) {
-      expect(analyzeSamlMessage(raw).kind).toBe(kind);
-      expect(isLikelySamlMessage(raw)).toBe(true);
+      const analysis = analyzeSamlMessage(raw);
+
+      expect(analysis.kind).toBe(kind);
+      expect(isSamlMessage(analysis)).toBe(true);
     }
   });
 
   it("rejects ordinary traffic, so the tab does not follow every request", () => {
     const raw = request("GET /index.html HTTP/1.1", ["Host: example.com"]);
 
-    expect(isLikelySamlMessage(raw)).toBe(false);
+    expect(isSamlMessage(analyzeSamlMessage(raw))).toBe(false);
   });
 
-  it("accepts a half-typed draft the analyzer rejects, which is why it gates the tab", () => {
+  it("rejects a request that only mentions the parameter name in a header", () => {
     const draft = "POST /acs HTTP/1.1\r\nHost: sp\r\nX-Note: SAMLResponse";
 
-    expect(analyzeSamlMessage(draft).kind).toBe("NotSaml");
-    expect(isLikelySamlMessage(draft)).toBe(true);
+    expect(isSamlMessage(analyzeSamlMessage(draft))).toBe(false);
   });
 
-  it("accepts a SAML message wrapped in JSON, which the form parser cannot reach", () => {
+  it("rejects a SAML message wrapped in JSON, which it cannot decode anyway", () => {
     const raw = request(
       "POST /acs HTTP/1.1",
       ["Content-Type: application/json"],
       '{"SAMLResponse":"PHNhbWw+"}',
     );
 
-    expect(analyzeSamlMessage(raw).kind).toBe("NotSaml");
-    expect(isLikelySamlMessage(raw)).toBe(true);
+    expect(isSamlMessage(analyzeSamlMessage(raw))).toBe(false);
   });
 
   it("treats an empty parameter value as present, matching isPresent", () => {
@@ -233,12 +237,39 @@ describe("isLikelySamlMessage", () => {
       value: "",
     });
   });
+});
 
-  it("honours custom parameter names", () => {
-    const raw = request("POST /acs HTTP/1.1", [FORM], "MySamlResp=abc");
-    const names = { samlRequest: "MySamlReq", samlResponse: "MySamlResp" };
+describe("duplicate SAML parameters, an HTTP parameter pollution vector", () => {
+  it("flags a duplicated parameter and analyses the first occurrence", () => {
+    const raw = request(
+      "POST /acs HTTP/1.1",
+      [FORM],
+      "SAMLResponse=first&SAMLResponse=second",
+    );
 
-    expect(isLikelySamlMessage(raw)).toBe(false);
-    expect(isLikelySamlMessage(raw, names)).toBe(true);
+    expect(analyzeSamlMessage(raw)).toMatchObject({
+      kind: "Parameter",
+      value: "first",
+      isDuplicated: true,
+    });
+  });
+
+  it("does not flag a single parameter", () => {
+    const raw = request("POST /acs HTTP/1.1", [FORM], "SAMLResponse=only");
+
+    expect(analyzeSamlMessage(raw)).toMatchObject({ isDuplicated: false });
+  });
+
+  it("does not confuse a duplicate in the query with one in the body", () => {
+    const raw = request(
+      "POST /acs?SAMLResponse=q1&SAMLResponse=q2 HTTP/1.1",
+      [FORM],
+      "SAMLResponse=body",
+    );
+
+    expect(analyzeSamlMessage(raw)).toMatchObject({
+      source: "Body",
+      isDuplicated: false,
+    });
   });
 });

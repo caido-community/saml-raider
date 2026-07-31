@@ -7,5 +7,8 @@
   "main": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@caido/sdk-shared": "0.2.2"
   }
 }

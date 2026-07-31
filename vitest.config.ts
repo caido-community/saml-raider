@@ -1,12 +1,21 @@
+import vue from "@vitejs/plugin-vue";
 import path from "path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [vue({ include: [/\.vue$/] })],
   resolve: {
     alias: [
       {
         find: "@",
         replacement: path.resolve(__dirname, "packages/frontend/src"),
+      },
+      {
+        find: /^vue$/,
+        replacement: path.resolve(
+          __dirname,
+          "packages/frontend/node_modules/vue",
+        ),
       },
     ],
   },

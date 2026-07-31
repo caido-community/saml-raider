@@ -1,28 +1,50 @@
 import { Classic } from "@caido/primevue";
-import { type RequestViewModeOptions } from "@caido/sdk-frontend";
+import {
+  type RequestViewModeOptions,
+  type ResponseViewModeOptions,
+} from "@caido/sdk-frontend";
 import PrimeVue from "primevue/config";
 import { createApp, markRaw } from "vue";
 
 import { MessageView } from "./components/samlMessage/MessageView";
-import { isLikelySamlMessage } from "./core";
+import { analyzeSamlMessage, isSamlMessage } from "./core";
 import "./styles/index.css";
 import type { FrontendSDK } from "./types";
 import App from "./views/App.vue";
 
+export const carriesSamlMessage = (raw: string): boolean =>
+  isSamlMessage(analyzeSamlMessage(raw));
+
 const registerViewModes = (sdk: FrontendSDK) => {
-  const options: RequestViewModeOptions = {
+  const view = { component: markRaw(MessageView) };
+
+  const request: RequestViewModeOptions = {
     label: "SAML",
-    view: { component: markRaw(MessageView) },
-    when: (request) => isLikelySamlMessage(request.raw),
+    view,
+    when: (candidate) => carriesSamlMessage(candidate.raw),
   };
 
-  sdk.replay.addRequestViewMode(options);
-  sdk.intercept.addRequestViewMode(options);
-  sdk.httpHistory.addRequestViewMode(options);
-  sdk.search.addRequestViewMode(options);
-  sdk.sitemap.addRequestViewMode(options);
-  sdk.automate.addRequestViewMode(options);
-  sdk.findings.addRequestViewMode(options);
+  const response: ResponseViewModeOptions = {
+    label: "SAML",
+    view,
+    when: (candidate) => carriesSamlMessage(candidate.raw),
+  };
+
+  sdk.replay.addRequestViewMode(request);
+  sdk.intercept.addRequestViewMode(request);
+  sdk.httpHistory.addRequestViewMode(request);
+  sdk.search.addRequestViewMode(request);
+  sdk.sitemap.addRequestViewMode(request);
+  sdk.automate.addRequestViewMode(request);
+  sdk.findings.addRequestViewMode(request);
+
+  sdk.replay.addResponseViewMode(response);
+  sdk.intercept.addResponseViewMode(response);
+  sdk.httpHistory.addResponseViewMode(response);
+  sdk.search.addResponseViewMode(response);
+  sdk.sitemap.addResponseViewMode(response);
+  sdk.automate.addResponseViewMode(response);
+  sdk.findings.addResponseViewMode(response);
 };
 
 export const init = (sdk: FrontendSDK) => {
@@ -47,7 +69,9 @@ export const init = (sdk: FrontendSDK) => {
     body: root,
   });
 
-  sdk.sidebar.registerItem("SAML Raider", `/${__PLUGIN_ID__}`);
+  sdk.sidebar.registerItem("SAML Raider", `/${__PLUGIN_ID__}`, {
+    icon: "fas fa-certificate",
+  });
 
   registerViewModes(sdk);
 };

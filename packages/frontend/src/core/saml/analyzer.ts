@@ -1,10 +1,7 @@
-import { type ParameterNames, type SamlAnalysis } from "@/types";
-import {
-  isPresent,
-  type ParameterSource,
-  readFormParameter,
-  readHeader,
-} from "@/utils";
+import { type ParameterNames, type SamlAnalysis } from "./types";
+
+import { type ParameterSource } from "@/utils";
+import { isPresent, readFormParameters, readHeader } from "@/utils";
 
 const DEFAULT_PARAMETER_NAMES: ParameterNames = {
   samlRequest: "SAMLRequest",
@@ -29,7 +26,11 @@ export const analyzeSamlMessage = (
       : { kind: "XmlWithoutAssertion" };
   }
 
-  const wsFederation = readFormParameter(raw, WS_FEDERATION_PARAMETER, "Body");
+  const wsFederation = readFormParameters(
+    raw,
+    WS_FEDERATION_PARAMETER,
+    "Body",
+  )[0];
   if (isPresent(wsFederation)) {
     return {
       kind: "WsFederation",
@@ -50,7 +51,9 @@ export const analyzeSamlMessage = (
   ];
 
   for (const candidate of searchOrder) {
-    const value = readFormParameter(raw, candidate.name, candidate.source);
+    const values = readFormParameters(raw, candidate.name, candidate.source);
+    const value = values[0];
+
     if (isPresent(value)) {
       return {
         kind: "Parameter",
@@ -58,6 +61,7 @@ export const analyzeSamlMessage = (
         value,
         source: candidate.source,
         isSamlRequest: candidate.isSamlRequest,
+        isDuplicated: values.length > 1,
       };
     }
   }
@@ -65,11 +69,15 @@ export const analyzeSamlMessage = (
   return { kind: "NotSaml" };
 };
 
-export const isLikelySamlMessage = (
-  raw: string,
-  names: ParameterNames = DEFAULT_PARAMETER_NAMES,
-): boolean =>
-  raw.includes(names.samlRequest) ||
-  raw.includes(names.samlResponse) ||
-  raw.includes(WS_FEDERATION_PARAMETER) ||
-  ASSERTION.test(raw);
+export const isSamlMessage = (analysis: SamlAnalysis): boolean => {
+  switch (analysis.kind) {
+    case "Soap":
+    case "WsFederation":
+    case "Parameter":
+      return true;
+
+    case "NotSaml":
+    case "XmlWithoutAssertion":
+      return false;
+  }
+};

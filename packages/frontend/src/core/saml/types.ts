@@ -8,10 +8,13 @@ type DecodedParameter = {
 };
 
 export type DecodeFailure =
+  | { kind: "MalformedUrlEncoding" }
   | { kind: "InvalidBase64" }
   | { kind: "DecompressionFailed" }
+  | { kind: "TooLarge" }
   | { kind: "NotSaml" }
-  | { kind: "MalformedXml"; message: string };
+  | { kind: "MalformedXml"; message: string }
+  | { kind: "DoctypeRejected"; name: string };
 
 export type DecodeOutcome =
   | { kind: "Ok"; value: DecodedParameter }
@@ -33,12 +36,36 @@ export type SamlAnalysis =
       value: string;
       source: ParameterSource;
       isSamlRequest: boolean;
+      isDuplicated: boolean;
     };
 
 export type ParsedDocument =
-  { kind: "Ok"; document: Document } | { kind: "Malformed"; message: string };
+  | { kind: "Ok"; document: Document }
+  | { kind: "Malformed"; message: string }
+  | { kind: "DoctypeRejected"; name: string };
+
+export type SamlMessageKind =
+  | "Response"
+  | "AuthnRequest"
+  | "LogoutRequest"
+  | "LogoutResponse"
+  | "ArtifactResolve"
+  | "ArtifactResponse"
+  | "AttributeQuery"
+  | "Unknown";
+
+export type SignedElement = {
+  element: string;
+  id: Maybe<string>;
+};
 
 export type SamlMessageInfo = {
+  kind: SamlMessageKind;
+  id: Maybe<string>;
+  inResponseTo: Maybe<string>;
+  destination: Maybe<string>;
+  issueInstant: Maybe<string>;
+  statusCode: Maybe<string>;
   issuer: Maybe<string>;
   conditionNotBefore: Maybe<string>;
   conditionNotAfter: Maybe<string>;
@@ -49,4 +76,8 @@ export type SamlMessageInfo = {
   digestAlgorithm: Maybe<string>;
   encryptionMethod: Maybe<string>;
   certificate: Maybe<string>;
+  assertionCount: number;
+  encryptedAssertionCount: number;
+  signedElements: SignedElement[];
+  hasDuplicateIds: boolean;
 };

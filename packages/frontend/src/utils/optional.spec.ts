@@ -28,6 +28,15 @@ describe("isPresent", () => {
   });
 });
 
+describe("null arriving from a DOM API", () => {
+  it("treats null as absent, because getAttribute and textContent return it", () => {
+    const fromDom = JSON.parse("null") as Maybe<string>;
+
+    expect(isAbsent(fromDom)).toBe(true);
+    expect(isPresent(fromDom)).toBe(false);
+  });
+});
+
 describe("isAbsent", () => {
   it("accepts undefined", () => {
     expect(isAbsent(undefined)).toBe(true);

@@ -13,7 +13,7 @@ export default defineConfig({
   name: "SAML Raider",
   description:
     "SAML security testing: decode and edit SAML messages, run XML signature wrapping attacks, and manage certificates",
-  version: "0.0.0",
+  version: "0.1.0",
   author: {
     name: "Caido Labs Inc.",
     email: "dev@caido.io",

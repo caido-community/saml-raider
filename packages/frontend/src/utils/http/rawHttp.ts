@@ -1,6 +1,6 @@
-import { type Maybe } from "./optional";
+import { type ParameterSource } from "./types";
 
-export type ParameterSource = "Query" | "Body";
+import { type Maybe } from "@/utils";
 
 const splitHead = (raw: string): { head: string; body: string } => {
   const crlf = raw.indexOf("\r\n\r\n");
@@ -39,19 +39,26 @@ export const readQueryString = (raw: string): string => {
 
 export const readBody = (raw: string): string => splitHead(raw).body;
 
-export const readFormParameter = (
+export const readFormParameters = (
   raw: string,
   name: string,
   source: ParameterSource,
-): Maybe<string> => {
+): string[] => {
   const encoded = source === "Query" ? readQueryString(raw) : readBody(raw);
+  const found: string[] = [];
 
   for (const pair of encoded.split("&")) {
     const separator = pair.indexOf("=");
     if (separator === -1) continue;
     if (pair.slice(0, separator) !== name) continue;
-    return pair.slice(separator + 1);
+    found.push(pair.slice(separator + 1));
   }
 
-  return undefined;
+  return found;
 };
+
+export const readFormParameter = (
+  raw: string,
+  name: string,
+  source: ParameterSource,
+): Maybe<string> => readFormParameters(raw, name, source)[0];

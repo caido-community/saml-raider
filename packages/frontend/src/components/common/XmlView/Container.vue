@@ -1,19 +1,20 @@
 <script setup lang="ts">
+import { useTemplateRef } from "vue";
+
+import { useForm } from "./useForm";
+
 defineOptions({ name: "XmlView" });
 
-const { content, wrap = false } = defineProps<{
-  content: string;
-  wrap?: boolean;
-}>();
+const { content } = defineProps<{ content: string }>();
+
+const container = useTemplateRef<HTMLElement>("container");
+
+useForm(
+  () => container.value ?? undefined,
+  () => content,
+);
 </script>
 
 <template>
-  <div class="h-full w-full min-w-0 overflow-auto">
-    <pre
-      :class="[
-        'p-2 text-xs leading-relaxed text-surface-200',
-        wrap ? 'whitespace-pre-wrap break-all' : 'w-max whitespace-pre',
-      ]"
-      >{{ content }}</pre>
-  </div>
+  <div ref="container" class="w-full min-w-0 text-xs" />
 </template>

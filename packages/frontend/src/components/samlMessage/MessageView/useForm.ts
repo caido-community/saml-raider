@@ -1,35 +1,37 @@
-import { type EditorView } from "@codemirror/view";
 import {
   computed,
+  type ComputedRef,
   type MaybeRefOrGetter,
-  onMounted,
   ref,
-  shallowRef,
+  type Ref,
   toValue,
 } from "vue";
 
 import {
-  analyzeSamlMessage,
-  buildMessageState,
-  decodeMessage,
-  isLikelySamlMessage,
-} from "@/core";
+  describeSource,
+  isWritableSource,
+  type MessageSource,
+  readSourceRaw,
+} from "./source";
+
+import { analyzeSamlMessage, buildMessageState, decodeMessage } from "@/core";
 import {
   type Compression,
   type DecodeFailure,
   type MessageState,
   type SamlMessageInfo,
-} from "@/types";
-import { isPresent, type Maybe } from "@/utils";
+} from "@/core";
 
-export type Panel = "Attacks" | "Info";
+type Panel = "Attacks" | "Info";
 
-const PANELS: ReadonlyArray<{ label: string; value: Panel }> = [
+type PanelOption = { label: string; value: Panel };
+
+const PANELS: ReadonlyArray<PanelOption> = [
   { label: "SAML Attacks", value: "Attacks" },
   { label: "SAML Message Info", value: "Info" },
 ];
 
-export type MessageViewState =
+type MessageViewState =
   | { kind: "Notice"; icon: string; message: string }
   | {
       kind: "Message";
@@ -41,41 +43,46 @@ export type MessageViewState =
 
 const formatFailure = (failure: DecodeFailure): string => {
   switch (failure.kind) {
+    case "MalformedUrlEncoding":
+      return "the parameter is not valid percent-encoding";
+
     case "InvalidBase64":
       return "the parameter is not valid base64";
 
     case "DecompressionFailed":
       return "the parameter is neither XML nor a DEFLATE or gzip stream";
 
+    case "TooLarge":
+      return "the message exceeds the size this plugin will decode";
+
     case "NotSaml":
       return "no SAML message was found";
 
     case "MalformedXml":
       return failure.message;
+
+    case "DoctypeRejected":
+      return `it declares a document type (<!DOCTYPE ${failure.name}>), which is refused because SAML messages do not need one and it is a common XXE vector`;
   }
 };
 
-const buildViewState = (state: MessageState): MessageViewState => {
+const buildViewState = (
+  state: MessageState,
+  surface: string,
+): MessageViewState => {
   switch (state.kind) {
-    case "Idle":
-      return {
-        kind: "Notice",
-        icon: "fas fa-spinner",
-        message: "Reading request",
-      };
-
     case "NotSaml":
       return {
         kind: "Notice",
         icon: "fas fa-shield-halved",
-        message: "No SAML message in this request",
+        message: `No SAML message in this ${surface}`,
       };
 
     case "DecodeFailed":
       return {
         kind: "Notice",
         icon: "fas fa-triangle-exclamation",
-        message: `Could not decode this SAML message: ${formatFailure(state.failure)}`,
+        message: `Could not decode the SAML message in this ${surface}: ${formatFailure(state.failure)}`,
       };
 
     case "Decoded":
@@ -89,41 +96,31 @@ const buildViewState = (state: MessageState): MessageViewState => {
   }
 };
 
-export const useForm = (editor: MaybeRefOrGetter<Maybe<EditorView>>) => {
-  const state = shallowRef<MessageState>({ kind: "Idle" });
+export type MessageForm = {
+  state: ComputedRef<MessageViewState>;
+  panel: Ref<Panel>;
+  panels: ReadonlyArray<PanelOption>;
+  isWritable: ComputedRef<boolean>;
+};
+
+export const useForm = (
+  source: MaybeRefOrGetter<MessageSource>,
+): MessageForm => {
   const panel = ref<Panel>("Attacks");
 
-  let decoded: Maybe<string> = undefined;
-
-  const load = async (raw: string) => {
-    if (raw === decoded) return;
-    decoded = raw;
-
-    if (!isLikelySamlMessage(raw)) {
-      state.value = { kind: "NotSaml" };
-      return;
-    }
-
+  const state = computed(() => {
+    const current = toValue(source);
+    const raw = readSourceRaw(current);
     const analysis = analyzeSamlMessage(raw);
-    const outcome = await decodeMessage(raw, analysis);
-    if (raw !== decoded) return;
+    const outcome = decodeMessage(raw, analysis);
 
-    state.value = buildMessageState(analysis, outcome);
-  };
-
-  const readRaw = (): string => toValue(editor)?.state.doc.toString() ?? "";
-
-  onMounted(() => void load(readRaw()));
-
-  const isWritable = computed(() => {
-    const current = toValue(editor);
-    return isPresent(current) && !current.state.readOnly;
+    return buildViewState(
+      buildMessageState(analysis, outcome),
+      describeSource(current),
+    );
   });
 
-  return {
-    state: computed(() => buildViewState(state.value)),
-    panel,
-    panels: PANELS,
-    isWritable,
-  };
+  const isWritable = computed(() => isWritableSource(toValue(source)));
+
+  return { state, panel, panels: PANELS, isWritable };
 };
