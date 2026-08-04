@@ -4,10 +4,13 @@ import {
   type ResponseViewModeOptions,
 } from "@caido/sdk-frontend";
 import PrimeVue from "primevue/config";
-import { createApp, markRaw } from "vue";
+import ConfirmationService from "primevue/confirmationservice";
+import Tooltip from "primevue/tooltip";
+import { createApp, defineComponent, h, markRaw } from "vue";
 
 import { MessageView } from "./components/samlMessage/MessageView";
-import { analyzeSamlMessage, isSamlMessage } from "./core";
+import { analyzeSamlMessage, applyParameterNames, isSamlMessage } from "./core";
+import { buildPreferenceService } from "./services/preferences";
 import "./styles/index.css";
 import type { FrontendSDK } from "./types";
 import App from "./views/App.vue";
@@ -16,7 +19,18 @@ export const carriesSamlMessage = (raw: string): boolean =>
   isSamlMessage(analyzeSamlMessage(raw));
 
 const registerViewModes = (sdk: FrontendSDK) => {
-  const view = { component: markRaw(MessageView) };
+  const view = {
+    component: markRaw(
+      defineComponent({
+        name: "SamlMessageViewHost",
+        inheritAttrs: false,
+        setup:
+          (_props, { attrs }) =>
+          () =>
+            h(MessageView, { ...attrs, sdk: markRaw(sdk) }),
+      }),
+    ),
+  };
 
   const request: RequestViewModeOptions = {
     label: "SAML",
@@ -47,13 +61,22 @@ const registerViewModes = (sdk: FrontendSDK) => {
   sdk.findings.addResponseViewMode(response);
 };
 
+const loadParameterNames = async (sdk: FrontendSDK) => {
+  const result = await buildPreferenceService(sdk).getParameterNames();
+  if (result.kind === "Ok") applyParameterNames(result.value);
+};
+
 export const init = (sdk: FrontendSDK) => {
-  const app = createApp(App);
+  void loadParameterNames(sdk);
+
+  const app = createApp(App, { sdk: markRaw(sdk) });
 
   app.use(PrimeVue, {
     unstyled: true,
     pt: Classic,
   });
+  app.use(ConfirmationService);
+  app.directive("tooltip", Tooltip);
 
   const root = document.createElement("div");
   Object.assign(root.style, {

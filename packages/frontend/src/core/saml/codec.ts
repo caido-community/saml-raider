@@ -17,10 +17,6 @@ export const MAX_ENCODED_BYTES = 8 * 1024 * 1024;
 
 export const MAX_DECODED_BYTES = 32 * 1024 * 1024;
 
-// DEFLATE cannot expand by more than 1032:1, so bounding the compressed input
-// bounds the allocation before it happens. fflate hands back the whole buffer
-// in one callback, and its bounded output buffer truncates silently, so neither
-// streaming nor an output cap can be used as the guard.
 const MAX_EXPANSION_RATIO = 1032;
 
 const MAX_COMPRESSED_BYTES = Math.floor(

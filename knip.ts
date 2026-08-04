@@ -7,6 +7,7 @@ const config: RawConfigurationOrFn = {
     },
     "packages/backend": {
       project: ["src/**/*.ts"],
+      ignoreBinaries: ["openssl"],
       ignoreDependencies: ["caido"],
     },
     "packages/frontend": {

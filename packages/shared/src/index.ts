@@ -10,4 +10,28 @@ export type Spec = DefinePluginPackageSpec<{
 }>;
 
 export type { API } from "./api";
+export type {
+  BasicConstraints,
+  Certificate,
+  CertificateBackup,
+  CertificateDetails,
+  CertificateSource,
+  CertificateSubject,
+  CertificateValidity,
+  CloneCertificateInput,
+  CloneChainInput,
+  CloneChainKey,
+  CreateSelfSignedInput,
+  ExportBackupInput,
+  ImportCertificatesInput,
+  ImportedCertificate,
+  ImportPrivateKeyInput,
+  SignatureAlgorithm,
+  UnsupportedExtension,
+  UpdateCertificateLabelInput,
+} from "./certificates";
 export type { Events } from "./events";
+export { DEFAULT_PARAMETER_NAMES, type ParameterNames } from "./preferences";
+export { readErrorMessage } from "./errors";
+export { buildPem } from "./pem";
+export { err, ok, type Result } from "./result";

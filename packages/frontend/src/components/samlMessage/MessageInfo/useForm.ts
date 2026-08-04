@@ -7,10 +7,6 @@ type InfoField = { label: string; value: string };
 
 export type InfoGroup = { title: string; fields: InfoField[] };
 
-/**
- * A row holds one group at full width, or two groups side by side. Only groups
- * whose fields are both few and short enough to never wrap share a row.
- */
 export type InfoRow = { key: string; groups: InfoGroup[] };
 
 const ABSENT = "—";

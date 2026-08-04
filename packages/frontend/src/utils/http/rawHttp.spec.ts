@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   readBody,
-  readFormParameter,
   readFormParameters,
   readHeader,
   readQueryString,
@@ -67,32 +66,6 @@ describe("readBody", () => {
   });
 });
 
-describe("readFormParameter", () => {
-  it("reads from the body", () => {
-    expect(readFormParameter(CRLF, "SAMLResponse", "Body")).toBe("PHNhbWw%2B");
-  });
-
-  it("reads from the query", () => {
-    expect(readFormParameter(CRLF, "RelayState", "Query")).toBe("%2Fdash");
-  });
-
-  it("does not leak between sources", () => {
-    expect(readFormParameter(CRLF, "SAMLResponse", "Query")).toBeUndefined();
-    expect(readFormParameter(CRLF, "x", "Body")).toBeUndefined();
-  });
-
-  it("returns the value still percent-encoded, so the codec decodes exactly once", () => {
-    expect(readFormParameter(CRLF, "SAMLResponse", "Body")).toContain("%2B");
-  });
-
-  it("does not match a parameter whose name is a suffix of another", () => {
-    const raw =
-      "POST / HTTP/1.1\r\nHost: a\r\n\r\nXSAMLResponse=nope&SAMLResponse=yes";
-
-    expect(readFormParameter(raw, "SAMLResponse", "Body")).toBe("yes");
-  });
-});
-
 describe("readFormParameters", () => {
   it("returns every occurrence in order", () => {
     const raw =
@@ -108,9 +81,12 @@ describe("readFormParameters", () => {
     expect(readFormParameters(CRLF, "nope", "Body")).toStrictEqual([]);
   });
 
-  it("readFormParameter takes the first, which is what most parsers do", () => {
+  it("keeps repeated parameters in the order they appear", () => {
     const raw = "POST / HTTP/1.1\r\nHost: a\r\n\r\nq=first&q=second";
 
-    expect(readFormParameter(raw, "q", "Body")).toBe("first");
+    expect(readFormParameters(raw, "q", "Body")).toStrictEqual([
+      "first",
+      "second",
+    ]);
   });
 });

@@ -15,9 +15,13 @@ const {
   request = undefined,
   draft = undefined,
   response = undefined,
+  view = undefined,
+  sdk = undefined,
 } = defineProps<ViewModeProps>();
 
-const source = computed(() => readMessageSource({ request, draft, response }));
+const source = computed(() =>
+  readMessageSource({ request, draft, response, view }),
+);
 
 const { state, panel, panels, isWritable } = useForm(source);
 </script>
@@ -52,6 +56,7 @@ const { state, panel, panels, isWritable } = useForm(source);
         :info="state.info"
         :pretty-xml="state.prettyXml"
         :compression="state.compression"
+        :sdk="sdk"
       />
     </div>
   </div>

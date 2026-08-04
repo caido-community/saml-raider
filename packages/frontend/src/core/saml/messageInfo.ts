@@ -23,12 +23,6 @@ const MESSAGE_KINDS: ReadonlyArray<SamlMessageKind> = [
   "AttributeQuery",
 ];
 
-/**
- * Unprefixed elements are accepted deliberately. Hand-crafted attack payloads
- * routinely drop namespace declarations, and refusing them would blind the
- * analysis to exactly the messages this plugin exists to inspect. Elements in a
- * different, named namespace are still rejected.
- */
 const inNamespaceOrUnprefixed = (
   element: Element,
   namespace: string,
@@ -55,7 +49,7 @@ type Collected = {
   signatureMethod: Maybe<Element>;
   digestMethod: Maybe<Element>;
   encryptionMethod: Maybe<Element>;
-  certificate: Maybe<Element>;
+  certificates: string[];
   statusCode: Maybe<Element>;
   assertions: number;
   encryptedAssertions: number;
@@ -72,7 +66,7 @@ const collect = (document: Document): Collected => {
     signatureMethod: undefined,
     digestMethod: undefined,
     encryptionMethod: undefined,
-    certificate: undefined,
+    certificates: [],
     statusCode: undefined,
     assertions: 0,
     encryptedAssertions: 0,
@@ -106,7 +100,10 @@ const collect = (document: Document): Collected => {
     if (inNamespaceOrUnprefixed(element, XML_SIGNATURE_NS)) {
       if (name === "SignatureMethod") found.signatureMethod ??= element;
       if (name === "DigestMethod") found.digestMethod ??= element;
-      if (name === "X509Certificate") found.certificate ??= element;
+      if (name === "X509Certificate") {
+        const value = readText(element);
+        if (isPresent(value) && value !== "") found.certificates.push(value);
+      }
       if (name === "Signature") {
         const parent = element.parentElement;
         if (isPresent(parent)) {
@@ -155,7 +152,7 @@ export const readMessageInfo = (document: Document): SamlMessageInfo => {
     signatureAlgorithm: readAttribute(found.signatureMethod, "Algorithm"),
     digestAlgorithm: readAttribute(found.digestMethod, "Algorithm"),
     encryptionMethod: readAttribute(found.encryptionMethod, "Algorithm"),
-    certificate: readText(found.certificate),
+    certificates: found.certificates,
     assertionCount: found.assertions,
     encryptedAssertionCount: found.encryptedAssertions,
     signedElements: found.signedElements,

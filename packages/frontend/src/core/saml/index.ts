@@ -3,6 +3,7 @@ export * from "./codec";
 export * from "./message";
 export * from "./messageInfo";
 export * from "./namespaces";
+export * from "./parameterNames";
 export * from "./types";
 export * from "./messageState";
 export * from "./pretty";

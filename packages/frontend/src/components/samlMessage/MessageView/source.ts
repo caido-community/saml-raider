@@ -5,19 +5,15 @@ import {
 } from "@caido/sdk-frontend";
 import { type EditorView } from "@codemirror/view";
 
+import { type FrontendSDK } from "@/types";
 import { isPresent, type Maybe } from "@/utils";
 
-/**
- * The host renders this component on three surfaces and supplies a different
- * prop set for each: writable requests get a draft, readable requests get a
- * persisted request, responses get a response. Vue props arrive as one flat
- * object, so the union lives in the resolved source rather than in the props.
- */
 export type ViewModeProps = {
   request?: Maybe<RequestFull>;
   draft?: Maybe<RequestDraft>;
   response?: Maybe<ResponseFull>;
   view?: Maybe<EditorView>;
+  sdk?: Maybe<FrontendSDK>;
 };
 
 export type MessageSource =

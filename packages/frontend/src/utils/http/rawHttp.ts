@@ -56,9 +56,3 @@ export const readFormParameters = (
 
   return found;
 };
-
-export const readFormParameter = (
-  raw: string,
-  name: string,
-  source: ParameterSource,
-): Maybe<string> => readFormParameters(raw, name, source)[0];

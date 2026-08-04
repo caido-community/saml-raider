@@ -1,12 +1,10 @@
-import { type ParameterNames, type SamlAnalysis } from "./types";
+import { type ParameterNames } from "shared";
+
+import { readParameterNames } from "./parameterNames";
+import { type SamlAnalysis } from "./types";
 
 import { type ParameterSource } from "@/utils";
 import { isPresent, readFormParameters, readHeader } from "@/utils";
-
-const DEFAULT_PARAMETER_NAMES: ParameterNames = {
-  samlRequest: "SAMLRequest",
-  samlResponse: "SAMLResponse",
-};
 
 const ASSERTION = /<[\w.-]*:?(?:Encrypted)?Assertion[\s/>]/;
 const WS_FEDERATION_PARAMETER = "wresult";
@@ -18,7 +16,7 @@ const hasContentType = (raw: string, wanted: string): boolean => {
 
 export const analyzeSamlMessage = (
   raw: string,
-  names: ParameterNames = DEFAULT_PARAMETER_NAMES,
+  names: ParameterNames = readParameterNames(),
 ): SamlAnalysis => {
   if (hasContentType(raw, "xml")) {
     return ASSERTION.test(raw)
