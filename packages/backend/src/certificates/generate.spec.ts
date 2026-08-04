@@ -23,8 +23,10 @@ import { parseCertificatePem } from "./parse";
 
 const directory = mkdtempSync(join(tmpdir(), "saml-raider-"));
 
-const openssl = (args: string[]): string =>
-  execFileSync("openssl", args, { encoding: "utf8" });
+const openssl = (args: string[]): string => {
+  const pinned = args[0] === "x509" ? [...args, "-nameopt", "RFC2253"] : args;
+  return execFileSync("openssl", pinned, { encoding: "utf8" });
+};
 
 const writePem = (name: string, pem: string): string => {
   const path = join(directory, name);
