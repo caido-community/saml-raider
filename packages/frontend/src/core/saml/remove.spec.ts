@@ -54,10 +54,6 @@ describe("removing selected signatures", () => {
     expect(remaining(buildDocumentWithoutAnySignature(document()))).toBe(0);
   });
 
-  /**
-   * Removal must not disturb anything the remaining signature covers, or that
-   * signature stops verifying for a reason the user never asked for.
-   */
   it("keeps every unrelated element", () => {
     const xml = buildDocumentWithoutAnySignature(document());
 

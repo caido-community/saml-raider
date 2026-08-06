@@ -93,10 +93,6 @@ describe("inheriting algorithms", () => {
     );
   });
 
-  /**
-   * Falling back silently would produce a signature the user did not ask for
-   * and did not notice, using a different algorithm from the one on the wire.
-   */
   it("refuses an inherited algorithm it does not support", async () => {
     const foreign = existingSignature.replace(
       "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",

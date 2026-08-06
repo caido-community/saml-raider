@@ -33,10 +33,6 @@ const write = (overrides: {
   });
 
 describe("refusing to write", () => {
-  /**
-   * The host owns whether a message can change. Writing to a read-only view
-   * would mutate a request the user is only inspecting.
-   */
   it("never writes to a read-only view", () => {
     expect(
       write({ raw: postRequest("SAMLResponse=old"), isReadOnly: true }),
@@ -122,10 +118,6 @@ describe("detached Redirect-binding signatures", () => {
   );
   const queryTarget = target({ name: "SAMLRequest", source: "Query" });
 
-  /**
-   * A Redirect-binding signature covers the query string. Rewriting the message
-   * without addressing it would send a signature that cannot verify.
-   */
   it("blocks rather than sending a signature that can no longer verify", () => {
     const outcome = write({ raw: signedRedirect, target: queryTarget });
 

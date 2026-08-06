@@ -38,11 +38,6 @@ describe("indexing identifiers", () => {
     expect(readElementById(index, "_absent")).toEqual({ kind: "Missing" });
   });
 
-  /**
-   * Two elements sharing an identifier is the core of signature wrapping: a
-   * verifier that silently takes the first resolves a different element than
-   * the one the signature covers.
-   */
   it("refuses a duplicated identifier instead of taking the first", () => {
     const index = buildElementIdIndex(
       documentOf(`<r><a ID="_dup"/><b ID="_dup"/></r>`),
@@ -101,11 +96,6 @@ describe("digesting a reference", () => {
     expect(digest).toBe(expected);
   });
 
-  /**
-   * The enveloped transform must exclude the whole Signature subtree. Digesting
-   * with it still present produces a value no verifier can reproduce, because
-   * the verifier removes it before hashing.
-   */
   it("excludes the signature the reference lives in", async () => {
     const document = documentOf(
       `<r ID="_1"><a>x</a><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><v>ignored</v></Signature></r>`,

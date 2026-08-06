@@ -39,10 +39,6 @@ describe("a message that is not wrapped", () => {
 });
 
 describe("wrapping variants", () => {
-  /**
-   * The classic wrap: two assertions share the identifier the signature names,
-   * so which one a consumer resolves decides who it believes you are.
-   */
   it("catches two assertions claiming the signed identifier", () => {
     expect(riskOf(DUPLICATE_ID)).toEqual({
       kind: "DuplicateId",
@@ -51,10 +47,6 @@ describe("wrapping variants", () => {
     });
   });
 
-  /**
-   * The signature is genuinely valid here. The danger is that it covers an
-   * assertion a consumer taking the first one would never look at.
-   */
   it("catches an unsigned assertion placed ahead of the signed one", () => {
     expect(riskOf(EVIL_SIBLING_FIRST)).toEqual({
       kind: "SignedElementNotConsumed",

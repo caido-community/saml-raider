@@ -111,10 +111,6 @@ describe("reference resolution", () => {
     });
   });
 
-  /**
-   * A wrapped document carries the signed element twice. Resolving the first
-   * silently would verify a payload the signature never covered.
-   */
   it("refuses a duplicated identifier rather than choosing one", async () => {
     const outcome = await outcomeOf(build({ extra: `<clone ID="_1"/>` }));
 
@@ -205,10 +201,6 @@ describe("outcomes the rest of the suite never reaches", () => {
     });
   });
 
-  /**
-   * A backend that cannot answer is not a verdict about the signature, so it
-   * must not be reported as one.
-   */
   it("separates a verifier that refused from a signature that failed", async () => {
     const refuses = (): Promise<Result<boolean>> =>
       Promise.resolve(err<boolean>("the backend did not answer"));

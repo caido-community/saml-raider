@@ -98,10 +98,6 @@ describe("putting an edited message back in its envelope", () => {
     expect(outcome.xml).not.toContain('ID="_r1"');
   });
 
-  /**
-   * Headers carry WS-Security material a caller did not ask to change, so
-   * rebuilding must not quietly drop them.
-   */
   it("preserves everything outside the body", () => {
     const withHeader = `<s:Envelope xmlns:s="${SOAP11}"><s:Header><Token>keep</Token></s:Header><s:Body>${samlResponse}</s:Body></s:Envelope>`;
 

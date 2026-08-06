@@ -118,11 +118,6 @@ describe("the document it produces", () => {
     expect(outcome.summary.placement).toBe("FirstChild");
   });
 
-  /**
-   * A document already using the ds prefix for something else would otherwise
-   * have its own binding rewritten, changing bytes the original signature
-   * covered.
-   */
   it("does not reuse a ds prefix that is already bound elsewhere", async () => {
     const outcome = await buildSignedDocument(
       request({
@@ -153,10 +148,6 @@ describe("the document it produces", () => {
 });
 
 describe("checking its own output", () => {
-  /**
-   * The recipient parses the serialized string, not the DOM this code built, so
-   * verifying the DOM would miss anything serialization changes.
-   */
   it("fails when its own output does not verify", async () => {
     const rejectsEverything = (): Promise<Result<boolean>> =>
       Promise.resolve(ok(false));
