@@ -12,7 +12,8 @@
     "knip": "knip",
     "build": "caido-dev build",
     "watch": "caido-dev watch",
-    "test": "vitest run"
+    "test": "vitest run",
+    "goldens": "node scripts/regenerate-c14n-goldens.mjs"
   },
   "browserslist": [
     "chrome >= 120",

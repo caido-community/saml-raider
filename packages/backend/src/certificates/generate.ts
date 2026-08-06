@@ -22,12 +22,13 @@ const REGENERATED_EXTENSIONS = new Set([
   "authorityKeyIdentifier",
 ]);
 
-const DIGESTS: Record<SignatureAlgorithm, () => forge.md.MessageDigest> = {
-  "SHA-256": forge.md.sha256.create,
-  "SHA-384": forge.md.sha384.create,
-  "SHA-512": forge.md.sha512.create,
-  "SHA-1": forge.md.sha1.create,
-};
+export const DIGESTS: Record<SignatureAlgorithm, () => forge.md.MessageDigest> =
+  {
+    "SHA-256": forge.md.sha256.create,
+    "SHA-384": forge.md.sha384.create,
+    "SHA-512": forge.md.sha512.create,
+    "SHA-1": forge.md.sha1.create,
+  };
 
 export const buildSerialNumber = (): string =>
   `00${Buffer.from(randomBytes(16)).toString("hex")}`;
@@ -58,7 +59,7 @@ type Read<T> =
   | { kind: "Ok"; value: T }
   | { kind: "Failed"; failure: GenerateFailure };
 
-const readPrivateKey = (pem: string): Read<forge.pki.rsa.PrivateKey> => {
+export const readPrivateKey = (pem: string): Read<forge.pki.rsa.PrivateKey> => {
   try {
     return { kind: "Ok", value: forge.pki.privateKeyFromPem(pem) };
   } catch (error) {
@@ -69,7 +70,7 @@ const readPrivateKey = (pem: string): Read<forge.pki.rsa.PrivateKey> => {
   }
 };
 
-const readCertificate = (pem: string): Read<forge.pki.Certificate> => {
+export const readCertificate = (pem: string): Read<forge.pki.Certificate> => {
   try {
     return { kind: "Ok", value: forge.pki.certificateFromPem(pem) };
   } catch (error) {

@@ -10,6 +10,10 @@ import { createApp, defineComponent, h, markRaw } from "vue";
 
 import { MessageView } from "./components/samlMessage/MessageView";
 import { analyzeSamlMessage, applyParameterNames, isSamlMessage } from "./core";
+import {
+  buildCertificateService,
+  setCertificateService,
+} from "./services/certificates";
 import { buildPreferenceService } from "./services/preferences";
 import "./styles/index.css";
 import type { FrontendSDK } from "./types";
@@ -27,7 +31,7 @@ const registerViewModes = (sdk: FrontendSDK) => {
         setup:
           (_props, { attrs }) =>
           () =>
-            h(MessageView, { ...attrs, sdk: markRaw(sdk) }),
+            h(MessageView, { ...attrs }),
       }),
     ),
   };
@@ -67,6 +71,7 @@ const loadParameterNames = async (sdk: FrontendSDK) => {
 };
 
 export const init = (sdk: FrontendSDK) => {
+  setCertificateService(buildCertificateService(sdk));
   void loadParameterNames(sdk);
 
   const app = createApp(App, { sdk: markRaw(sdk) });

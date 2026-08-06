@@ -9,6 +9,7 @@ import {
 
 import { generateRsaPrivateKeyPem } from "./keys";
 
+import { type SignSignedInfo, type VerifySignedInfo } from "@/core";
 import { callBackend } from "@/services/call";
 import { type FrontendSDK } from "@/types";
 import { isAbsent, type Maybe } from "@/utils";
@@ -45,6 +46,8 @@ export type CertificateService = {
   exportBackup: (includePrivateKeys: boolean) => Promise<Result<string>>;
   importBackup: (json: string) => Promise<Result<ImportedCertificate[]>>;
   readPrivateKeyPem: (id: string) => Promise<Result<string>>;
+  signSignedInfo: SignSignedInfo;
+  verifySignature: VerifySignedInfo;
 };
 
 export const buildCertificateService = (
@@ -151,5 +154,19 @@ export const buildCertificateService = (
 
     readPrivateKeyPem: (id: string) =>
       callBackend<string>(() => sdk.backend.readPrivateKeyPem(id)),
+
+    signSignedInfo: (input) =>
+      callBackend<string>(() => sdk.backend.signSignedInfo(input)),
+
+    verifySignature: (input) =>
+      callBackend<boolean>(() => sdk.backend.verifySignature(input)),
   };
 };
+
+let shared: Maybe<CertificateService>;
+
+export const setCertificateService = (service: CertificateService) => {
+  shared = service;
+};
+
+export const readCertificateService = (): Maybe<CertificateService> => shared;

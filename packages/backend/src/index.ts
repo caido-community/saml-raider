@@ -48,6 +48,12 @@ export function init(sdk: SDK<Spec>) {
   sdk.api.register("readPrivateKeyPem", (_sdk, id) =>
     certificates.readPrivateKeyPem(id),
   );
+  sdk.api.register("signSignedInfo", (_sdk, input) =>
+    certificates.signSignedInfo(input),
+  );
+  sdk.api.register("verifySignature", (_sdk, input) =>
+    certificates.verifySignature(input),
+  );
 
   sdk.api.register("getParameterNames", () => preferences.getParameterNames());
   sdk.api.register("setParameterNames", (_sdk, input) =>

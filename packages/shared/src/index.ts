@@ -27,6 +27,8 @@ export type {
   ImportedCertificate,
   ImportPrivateKeyInput,
   SignatureAlgorithm,
+  SignSignedInfoInput,
+  VerifySignatureInput,
   UnsupportedExtension,
   UpdateCertificateLabelInput,
 } from "./certificates";

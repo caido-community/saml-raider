@@ -1,0 +1,35 @@
+XSW1..XSW8.xml are the output of this plugin's own applyXsw, run against the two
+signed fixtures in tests/signing. They are committed so any change to the tree
+surgery shows up as a byte diff rather than a silent behaviour change.
+
+XSW1 and XSW2 wrap signed-response-by-us.xml (signature over the Response).
+XSW3..XSW8 wrap signed-by-us.xml (signature over the Assertion).
+
+Independent verdict, signxml 5.1.0 verifying the whole document as a service
+provider would, 2026-08-06:
+
+  control  signed-by-us.xml           VERIFIED  signed=Assertion ID=_a1
+  control  signed-response-by-us.xml  VERIFIED  signed=Response  ID=_r1
+
+  XSW1  REJECTED  DocumentInvalid    Response not expected inside Signature
+  XSW2  VERIFIED  signed=Response  ID=_r1
+  XSW3  VERIFIED  signed=Assertion ID=_a1
+  XSW4  VERIFIED  signed=Assertion ID=_a1
+  XSW5  VERIFIED  signed=Assertion ID=_a1
+  XSW6  REJECTED  DocumentInvalid    Assertion not expected inside Signature
+  XSW7  REJECTED  InvalidInput       Ambiguous reference URI #_a1 resolved to 2 nodes
+  XSW8  REJECTED  InvalidInput       Ambiguous reference URI #_a1 resolved to 2 nodes
+
+Reading that honestly:
+
+XSW2, XSW3, XSW4 and XSW5 defeat a hardened independent verifier. It reports a
+valid signature over the original element while a consumer that reads the first
+or last Assertion gets the attacker's copy. Those are working attacks.
+
+XSW1 and XSW6 are rejected only because signxml validates against the XML-DSig
+schema, which allows just ds:Object inside a Signature. Service providers that do
+not schema-validate remain vulnerable, so these variants stay in the tree.
+
+XSW7 and XSW8 are rejected because signxml refuses to resolve a duplicate ID.
+That is the secure behaviour, and it is what this plugin's own verifier reports
+as ReferenceAmbiguous rather than guessing which element was signed.

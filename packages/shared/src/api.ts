@@ -7,7 +7,9 @@ import type {
   ImportCertificatesInput,
   ImportedCertificate,
   ImportPrivateKeyInput,
+  SignSignedInfoInput,
   UpdateCertificateLabelInput,
+  VerifySignatureInput,
 } from "./certificates";
 import type { ParameterNames } from "./preferences";
 import type { Result } from "./result";
@@ -37,6 +39,8 @@ export type API = {
   importBackup: (json: string) => Promise<Result<ImportedCertificate[]>>;
 
   readPrivateKeyPem: (id: string) => Promise<Result<string>>;
+  signSignedInfo: (input: SignSignedInfoInput) => Promise<Result<string>>;
+  verifySignature: (input: VerifySignatureInput) => Promise<Result<boolean>>;
 
   getParameterNames: () => Promise<Result<ParameterNames>>;
   setParameterNames: (input: ParameterNames) => Promise<Result<ParameterNames>>;
