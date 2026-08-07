@@ -16,7 +16,9 @@ const form = useForm(() => xml, service);
 </script>
 
 <template>
-  <section class="min-w-0 border border-surface-700 rounded overflow-hidden">
+  <section
+    class="w-full min-w-0 border border-surface-700 rounded overflow-hidden"
+  >
     <header
       class="px-2 py-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-surface-300 bg-surface-800/60"
     >

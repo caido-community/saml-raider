@@ -71,6 +71,7 @@ export const buildMessageState = (
     case "Soap":
     case "WsFederation":
     case "Parameter":
+    case "Embedded":
       return buildDecodedState(analysis, outcome);
   }
 };

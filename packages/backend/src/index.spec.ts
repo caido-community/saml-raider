@@ -20,6 +20,8 @@ const EVERY_ENDPOINT: Record<keyof API, true> = {
   verifySignature: true,
   getParameterNames: true,
   setParameterNames: true,
+  getHighlightSettings: true,
+  setHighlightSettings: true,
 };
 
 const readRegisteredNames = (): string[] => {
@@ -31,7 +33,9 @@ const readRegisteredNames = (): string[] => {
       register: (name: string) => {
         registered.push(name);
       },
+      send: () => undefined,
     },
+    events: { onInterceptRequest: () => undefined },
   };
 
   init(sdk as unknown as SDK<Spec>);

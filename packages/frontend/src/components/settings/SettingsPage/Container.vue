@@ -3,6 +3,7 @@ import Card from "primevue/card";
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { CertificateBackups } from "@/components/settings/CertificateBackups";
+import { HighlightSettings } from "@/components/settings/HighlightSettings";
 import { ParameterNamesSettings } from "@/components/settings/ParameterNamesSettings";
 import { type CertificateService } from "@/services/certificates";
 import { type PreferenceService } from "@/services/preferences";
@@ -31,6 +32,18 @@ const { certificateService, preferenceService, notifications } = defineProps<{
       >
         <template #content>
           <ParameterNamesSettings
+            :service="preferenceService"
+            :notifications="notifications"
+          />
+        </template>
+      </Card>
+
+      <Card
+        class="shrink-0"
+        :pt="{ body: { class: 'p-0' }, content: { class: 'p-0' } }"
+      >
+        <template #content>
+          <HighlightSettings
             :service="preferenceService"
             :notifications="notifications"
           />

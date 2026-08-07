@@ -11,7 +11,7 @@ import type {
   UpdateCertificateLabelInput,
   VerifySignatureInput,
 } from "./certificates";
-import type { ParameterNames } from "./preferences";
+import type { HighlightSettings, ParameterNames } from "./preferences";
 import type { Result } from "./result";
 
 export type API = {
@@ -44,4 +44,8 @@ export type API = {
 
   getParameterNames: () => Promise<Result<ParameterNames>>;
   setParameterNames: (input: ParameterNames) => Promise<Result<ParameterNames>>;
+  getHighlightSettings: () => Promise<Result<HighlightSettings>>;
+  setHighlightSettings: (
+    input: HighlightSettings,
+  ) => Promise<Result<HighlightSettings>>;
 };

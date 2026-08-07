@@ -152,7 +152,43 @@ describe("the stored format", () => {
     expect(JSON.parse(written ?? "{}")).toEqual({
       version: 1,
       parameterNames: { samlRequest: "req", samlResponse: "resp" },
+      highlight: { isEnabled: false, color: "blue" },
     });
+  });
+
+  it("keeps the highlight setting when the parameter names are saved", async () => {
+    const { api, fileSystem } = buildApi();
+
+    await api.setHighlightSettings({ isEnabled: true, color: "green" });
+    await api.setParameterNames({ samlRequest: "req", samlResponse: "resp" });
+
+    const written = JSON.parse(
+      fileSystem.files.get(`${ROOT}/preferences.json`)?.content ?? "{}",
+    );
+
+    expect(written.highlight).toEqual({ isEnabled: true, color: "green" });
+    expect(await api.getHighlightSettings()).toEqual({
+      kind: "Ok",
+      value: { isEnabled: true, color: "green" },
+    });
+  });
+
+  it("defaults to not highlighting, so nothing is coloured until asked", async () => {
+    const { api } = buildApi();
+
+    expect(await api.getHighlightSettings()).toEqual({
+      kind: "Ok",
+      value: { isEnabled: false, color: "blue" },
+    });
+  });
+
+  it("refuses a colour the host does not offer", async () => {
+    const { api } = buildApi();
+
+    expect(
+      (await api.setHighlightSettings({ isEnabled: true, color: "chartreuse" }))
+        .kind,
+    ).toBe("Error");
   });
 
   it("reads a hand-written record of the current version", async () => {
@@ -198,5 +234,37 @@ describe("the stored format", () => {
     const result = await api.getParameterNames();
 
     expect(result.kind).toBe("Error");
+  });
+});
+
+describe("the cost of reading preferences on every proxied request", () => {
+  it("reads the file once and serves later reads from memory", async () => {
+    const { api, fileSystem } = buildApi();
+    await api.setHighlightSettings({ isEnabled: true, color: "green" });
+
+    const before = fileSystem.reads.count;
+    await api.getHighlightSettings();
+    await api.getHighlightSettings();
+    await api.getParameterNames();
+
+    expect(fileSystem.reads.count).toBe(before);
+  });
+
+  it("serves the new value immediately after a save, not a stale one", async () => {
+    const { api } = buildApi();
+
+    await api.setHighlightSettings({ isEnabled: true, color: "red" });
+
+    expect(await api.getHighlightSettings()).toEqual({
+      kind: "Ok",
+      value: { isEnabled: true, color: "red" },
+    });
+  });
+
+  it("still reports a store it cannot read", async () => {
+    const { api, fileSystem } = buildApi();
+    fileSystem.failing.add(`${ROOT}/preferences.json`);
+
+    expect((await api.getHighlightSettings()).kind).toBe("Error");
   });
 });

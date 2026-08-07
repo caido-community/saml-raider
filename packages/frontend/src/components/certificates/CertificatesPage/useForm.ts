@@ -6,13 +6,14 @@ import {
   type Result,
   type SignatureAlgorithm,
 } from "shared";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { readPemOrDerFile } from "@/components/certificates/files";
 import {
   type CertificateService,
   type SelfSignedRequest,
 } from "@/services/certificates";
+import { onCertificatesImported } from "@/services/imported";
 import { type NotificationSink } from "@/types";
 import { downloadText, isAbsent, isPresent, type Maybe } from "@/utils";
 
@@ -302,7 +303,11 @@ export const useForm = (options: {
       () => service.createSelfSigned(input),
     );
 
-  onMounted(() => refresh(true));
+  onMounted(() => {
+    void refresh(true);
+    const stop = onCertificatesImported(() => void refresh());
+    onUnmounted(stop);
+  });
 
   return {
     page,

@@ -1,1 +1,3 @@
-export type Events = Record<string, never>;
+export type Events = {
+  samlDetected: (requestId: string) => void;
+};
