@@ -94,7 +94,7 @@ const apply = (xml: string) => {
     :message="state.message"
   />
 
-  <div v-else class="h-full flex flex-col min-h-0">
+  <div v-else class="h-full w-full min-w-0 flex flex-col min-h-0">
     <div class="flex items-center gap-2 px-2 py-1 border-b border-surface-700">
       <SelectButton
         v-model="panel"
@@ -129,7 +129,7 @@ const apply = (xml: string) => {
         :service="service"
       />
 
-      <div v-else class="p-2 flex flex-col gap-2">
+      <div v-else class="p-2 w-full min-w-0 flex flex-col gap-2">
         <template v-if="isPresent(service)">
           <SignaturePanel :xml="state.xml" :service="service" />
           <AttacksPanel

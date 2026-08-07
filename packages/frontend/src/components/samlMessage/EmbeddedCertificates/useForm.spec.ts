@@ -1,8 +1,10 @@
-import { err } from "shared";
+import { err, ok } from "shared";
 import { describe, expect, it } from "vitest";
 
 import { useForm } from "./useForm";
 
+import { onCertificatesImported } from "@/services/imported";
+import { setNotificationSink } from "@/services/notifications";
 import {
   buildCertificate,
   buildServiceDouble,
@@ -13,6 +15,17 @@ import {
 } from "@/tests/fixtures";
 
 const LEAF_BASE64 = btoa("a certificate");
+
+const toasts: string[] = [];
+
+const imported: number[] = [];
+
+onCertificatesImported(() => imported.push(1));
+
+setNotificationSink({
+  showSuccess: (message) => toasts.push(message),
+  showError: (message) => toasts.push(message),
+});
 
 describe("reviewing before sending", () => {
   it("refuses rather than treating an unreadable store as empty", async () => {
@@ -94,7 +107,8 @@ describe("sending", () => {
     await second.send();
 
     expect(calls.importExtracted).toEqual([]);
-    expect(second.message.value).toContain("already stored");
+    expect(toasts.at(-1)).toContain("already stored");
+    expect(second.isOpen.value).toBe(false);
   });
 
   it("sends the new ones and reports how many", async () => {
@@ -105,7 +119,33 @@ describe("sending", () => {
     await form.send();
 
     expect(calls.importExtracted).toEqual([LEAF_BASE64]);
-    expect(form.message.value).toContain("Sent 1 certificate");
+    expect(toasts.at(-1)).toContain("Sent 1 certificate");
+  });
+
+  it("closes itself once the certificates are stored", async () => {
+    const { service } = buildServiceDouble([]);
+    const form = useForm(() => [LEAF_BASE64], service);
+    await form.review();
+    expect(form.isOpen.value).toBe(true);
+
+    await form.send();
+
+    expect(form.isOpen.value).toBe(false);
+  });
+
+  it("stays open on failure so the reason can be read", async () => {
+    const { service } = buildServiceDouble([]);
+    const form = useForm(() => [LEAF_BASE64], {
+      ...service,
+      importExtractedCertificate: () =>
+        Promise.resolve(err("the store is full")),
+    });
+    await form.review();
+
+    await form.send();
+
+    expect(form.isOpen.value).toBe(true);
+    expect(form.message.value).toContain("the store is full");
   });
 
   it("reports a failure instead of claiming success", async () => {
@@ -164,5 +204,27 @@ describe("nothing to send", () => {
 
     expect(form.rows.value).toEqual([]);
     expect(form.newCount.value).toBe(0);
+  });
+});
+
+describe("a certificate that was stored while the dialog was closing", () => {
+  it("still counts it, because the store already has it", async () => {
+    const { service } = buildServiceDouble([]);
+    let release = () => undefined as void;
+    const form = useForm(() => [LEAF_BASE64], {
+      ...service,
+      importExtractedCertificate: () =>
+        new Promise((resolve) => {
+          release = () => resolve(ok([]));
+        }),
+    });
+    await form.review();
+
+    const sending = form.send();
+    form.close();
+    release();
+    await sending;
+
+    expect(imported.at(-1)).toBe(1);
   });
 });

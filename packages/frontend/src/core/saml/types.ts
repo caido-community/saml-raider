@@ -25,6 +25,7 @@ export type SamlAnalysis =
   | { kind: "XmlWithoutAssertion" }
   | { kind: "Soap" }
   | { kind: "WsFederation"; value: string; isUrlEncoded: boolean }
+  | { kind: "Embedded"; name: string; value: string; isSamlRequest: boolean }
   | {
       kind: "Parameter";
       name: string;

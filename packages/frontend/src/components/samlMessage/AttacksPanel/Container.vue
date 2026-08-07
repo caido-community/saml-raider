@@ -70,7 +70,7 @@ onMounted(() => void form.loadCertificates());
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 min-w-0">
+  <div class="w-full min-w-0 flex flex-col gap-4">
     <p v-if="!isWritable" class="px-1 text-xs text-amber-300">
       <i class="fas fa-lock mr-1" />Read only. Send this request to Replay to
       run attacks against it.
