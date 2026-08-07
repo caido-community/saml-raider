@@ -3,16 +3,10 @@ import {
   type RequestFull,
   type ResponseFull,
 } from "@caido/sdk-frontend";
-import { type EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 
 import { isPresent, type Maybe } from "@/utils";
 
-/**
- * The host renders this component on three surfaces and supplies a different
- * prop set for each: writable requests get a draft, readable requests get a
- * persisted request, responses get a response. Vue props arrive as one flat
- * object, so the union lives in the resolved source rather than in the props.
- */
 export type ViewModeProps = {
   request?: Maybe<RequestFull>;
   draft?: Maybe<RequestDraft>;
@@ -21,18 +15,21 @@ export type ViewModeProps = {
 };
 
 export type MessageSource =
-  | { kind: "WritableRequest"; raw: string }
+  | { kind: "WritableRequest"; raw: string; view: EditorView }
   | { kind: "ReadableRequest"; raw: string }
   | { kind: "Response"; raw: string }
   | { kind: "Absent" };
 
-export const readMessageSource = (props: ViewModeProps): MessageSource => {
-  const isEditorReadOnly = props.view?.state.readOnly === true;
+const isEditorWritable = (view: EditorView): boolean =>
+  view.state.readOnly !== true &&
+  view.state.facet(EditorView.editable) !== false;
 
+export const readMessageSource = (props: ViewModeProps): MessageSource => {
   if (isPresent(props.draft)) {
-    return isEditorReadOnly
-      ? { kind: "ReadableRequest", raw: props.draft.raw }
-      : { kind: "WritableRequest", raw: props.draft.raw };
+    const view = props.view;
+    return isPresent(view) && isEditorWritable(view)
+      ? { kind: "WritableRequest", raw: props.draft.raw, view }
+      : { kind: "ReadableRequest", raw: props.draft.raw };
   }
 
   if (isPresent(props.request)) {
@@ -54,3 +51,25 @@ export const isWritableSource = (source: MessageSource): boolean =>
 
 export const describeSource = (source: MessageSource): string =>
   source.kind === "Response" ? "response" : "request";
+
+export type WriteBackOutcome =
+  | { kind: "Written" }
+  | { kind: "Refused"; reason: "ReadOnly" | "Diverged" | "Unchanged" };
+
+export const applyRawToEditor = (
+  view: EditorView,
+  baseline: string,
+  next: string,
+): WriteBackOutcome => {
+  if (!isEditorWritable(view)) return { kind: "Refused", reason: "ReadOnly" };
+
+  const current = view.state.doc.toString();
+  if (current !== baseline) return { kind: "Refused", reason: "Diverged" };
+  if (current === next) return { kind: "Refused", reason: "Unchanged" };
+
+  view.dispatch({
+    changes: { from: 0, to: view.state.doc.length, insert: next },
+  });
+
+  return { kind: "Written" };
+};

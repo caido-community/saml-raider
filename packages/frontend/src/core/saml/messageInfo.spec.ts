@@ -162,7 +162,7 @@ describe("assertion detail", () => {
       signatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
       digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
       encryptionMethod: undefined,
-      certificate: "MIIC-base64",
+      certificates: ["MIIC-base64"],
     });
   });
 
@@ -173,7 +173,7 @@ describe("assertion detail", () => {
       issuer: undefined,
       subject: undefined,
       signatureAlgorithm: undefined,
-      certificate: undefined,
+      certificates: [],
     });
   });
 

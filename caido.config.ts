@@ -66,8 +66,6 @@ export default defineConfig({
         css: {
           postcss: {
             plugins: [
-              // This plugin wraps the root element in a unique ID
-              // This is necessary to prevent styling conflicts between plugins
               prefixwrap(`#plugin--${id}`),
 
               tailwindcss({
@@ -78,16 +76,8 @@ export default defineConfig({
                   "./packages/frontend/src/**/*.{vue,ts}",
                   "./node_modules/@caido/primevue/dist/primevue.mjs",
                 ],
-                // Check the [data-mode="dark"] attribute on the <html> element to determine the mode
-                // This attribute is set in the Caido core application
                 darkMode: ["selector", '[data-mode="dark"]'],
-                plugins: [
-                  // This plugin injects the necessary Tailwind classes for PrimeVue components
-                  tailwindPrimeui,
-
-                  // This plugin injects the necessary Tailwind classes for the Caido theme
-                  tailwindCaido,
-                ],
+                plugins: [tailwindPrimeui, tailwindCaido],
               }),
             ],
           },

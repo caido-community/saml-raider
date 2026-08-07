@@ -2,18 +2,28 @@ import { type ParameterSource } from "./types";
 
 import { type Maybe } from "@/utils";
 
-const splitHead = (raw: string): { head: string; body: string } => {
+export type RawParts = { head: string; separator: string; body: string };
+
+export const splitHead = (raw: string): RawParts => {
   const crlf = raw.indexOf("\r\n\r\n");
   if (crlf !== -1) {
-    return { head: raw.slice(0, crlf), body: raw.slice(crlf + 4) };
+    return {
+      head: raw.slice(0, crlf),
+      separator: "\r\n\r\n",
+      body: raw.slice(crlf + 4),
+    };
   }
 
   const lf = raw.indexOf("\n\n");
   if (lf !== -1) {
-    return { head: raw.slice(0, lf), body: raw.slice(lf + 2) };
+    return {
+      head: raw.slice(0, lf),
+      separator: "\n\n",
+      body: raw.slice(lf + 2),
+    };
   }
 
-  return { head: raw, body: "" };
+  return { head: raw, separator: "", body: "" };
 };
 
 export const readHeader = (raw: string, name: string): Maybe<string> => {
@@ -56,9 +66,3 @@ export const readFormParameters = (
 
   return found;
 };
-
-export const readFormParameter = (
-  raw: string,
-  name: string,
-  source: ParameterSource,
-): Maybe<string> => readFormParameters(raw, name, source)[0];

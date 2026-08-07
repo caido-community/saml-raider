@@ -1,12 +1,16 @@
-import { type ParameterNames, type SamlAnalysis } from "./types";
+import { type ParameterNames } from "shared";
+
+import { readParameterNames } from "./parameterNames";
+import { type SamlAnalysis } from "./types";
 
 import { type ParameterSource } from "@/utils";
-import { isPresent, readFormParameters, readHeader } from "@/utils";
-
-const DEFAULT_PARAMETER_NAMES: ParameterNames = {
-  samlRequest: "SAMLRequest",
-  samlResponse: "SAMLResponse",
-};
+import {
+  isPresent,
+  readBody,
+  readFormParameters,
+  readHeader,
+  readQueryString,
+} from "@/utils";
 
 const ASSERTION = /<[\w.-]*:?(?:Encrypted)?Assertion[\s/>]/;
 const WS_FEDERATION_PARAMETER = "wresult";
@@ -18,7 +22,7 @@ const hasContentType = (raw: string, wanted: string): boolean => {
 
 export const analyzeSamlMessage = (
   raw: string,
-  names: ParameterNames = DEFAULT_PARAMETER_NAMES,
+  names: ParameterNames = readParameterNames(),
 ): SamlAnalysis => {
   if (hasContentType(raw, "xml")) {
     return ASSERTION.test(raw)
@@ -66,6 +70,37 @@ export const analyzeSamlMessage = (
     }
   }
 
+  return readEmbedded(raw, names);
+};
+
+const readEmbedded = (raw: string, names: ParameterNames): SamlAnalysis => {
+  const candidates: ReadonlyArray<{ name: string; isSamlRequest: boolean }> = [
+    { name: names.samlResponse, isSamlRequest: false },
+    { name: names.samlRequest, isSamlRequest: true },
+  ];
+
+  const scanned = `${readQueryString(raw)}\n${readBody(raw)}`;
+
+  for (const candidate of candidates) {
+    const at = scanned.indexOf(`${candidate.name}=`);
+    if (at === -1) continue;
+
+    const from = at + candidate.name.length + 1;
+    const end = /[&"'<>\\\s]/.exec(scanned.slice(from))?.index;
+    const value = scanned.slice(
+      from,
+      end === undefined ? undefined : from + end,
+    );
+    if (value === "") continue;
+
+    return {
+      kind: "Embedded",
+      name: candidate.name,
+      value,
+      isSamlRequest: candidate.isSamlRequest,
+    };
+  }
+
   return { kind: "NotSaml" };
 };
 
@@ -74,6 +109,7 @@ export const isSamlMessage = (analysis: SamlAnalysis): boolean => {
     case "Soap":
     case "WsFederation":
     case "Parameter":
+    case "Embedded":
       return true;
 
     case "NotSaml":

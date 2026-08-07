@@ -34,6 +34,7 @@ export const decodeMessage = (
       return decodeWsFederation(analysis.value, analysis.isUrlEncoded);
 
     case "Parameter":
+    case "Embedded":
       return decodeSamlParameter(analysis.value);
 
     case "NotSaml":

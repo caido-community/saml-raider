@@ -11,6 +11,11 @@ const forbidImports = (files, group, message) => ({
 export default [
   ...defaultConfig(),
 
+  {
+    files: ["packages/backend/src/**"],
+    rules: { "compat/compat": "off" },
+  },
+
   forbidImports(
     "packages/frontend/src/{components,views,composables}/**",
     ["@/stores", "@/stores/*", "@/repositories", "@/repositories/*"],

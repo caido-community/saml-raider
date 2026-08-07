@@ -71,11 +71,12 @@ describe("content", () => {
 });
 
 describe("read-only", () => {
-  it("marks the content as not editable, so no caret appears", () => {
+  it("refuses edits while staying focusable, which the search panel needs", () => {
     const wrapper = mountView(XML);
     const content = wrapper.element.querySelector(".cm-content");
 
-    expect(content?.getAttribute("contenteditable")).toBe("false");
+    expect(content?.getAttribute("contenteditable")).toBe("true");
+    expect(content?.getAttribute("aria-readonly")).toBe("true");
   });
 
   it("keeps the text selectable, which read-only must not prevent", () => {

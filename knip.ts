@@ -3,10 +3,12 @@ import type { RawConfigurationOrFn } from "knip/dist/types/config.js";
 const config: RawConfigurationOrFn = {
   workspaces: {
     ".": {
-      entry: ["caido.config.ts"],
+      entry: ["caido.config.ts", "scripts/*.mjs"],
+      ignoreBinaries: ["xmllint"],
     },
     "packages/backend": {
       project: ["src/**/*.ts"],
+      ignoreBinaries: ["openssl"],
       ignoreDependencies: ["caido"],
     },
     "packages/frontend": {

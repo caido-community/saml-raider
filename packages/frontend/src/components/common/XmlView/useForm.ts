@@ -1,7 +1,8 @@
 import { xml } from "@codemirror/lang-xml";
 import { foldGutter } from "@codemirror/language";
+import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { EditorState, type Extension } from "@codemirror/state";
-import { EditorView, lineNumbers } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import {
   type MaybeRefOrGetter,
   onBeforeUnmount,
@@ -10,17 +11,20 @@ import {
   toValue,
 } from "vue";
 
+import { buildSearchExtension } from "./search";
 import { buildTheme } from "./theme";
 
 import { isAbsent, type Maybe } from "@/utils";
 
 const buildExtensions = (): Extension[] => [
   EditorState.readOnly.of(true),
-  EditorView.editable.of(false),
   xml(),
   lineNumbers(),
   foldGutter(),
   EditorView.lineWrapping,
+  keymap.of(searchKeymap),
+  buildSearchExtension(),
+  highlightSelectionMatches(),
   ...buildTheme(),
 ];
 

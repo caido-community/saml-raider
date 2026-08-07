@@ -20,16 +20,12 @@ export type DecodeOutcome =
   | { kind: "Ok"; value: DecodedParameter }
   | { kind: "Failed"; failure: DecodeFailure };
 
-export type ParameterNames = {
-  samlRequest: string;
-  samlResponse: string;
-};
-
 export type SamlAnalysis =
   | { kind: "NotSaml" }
   | { kind: "XmlWithoutAssertion" }
   | { kind: "Soap" }
   | { kind: "WsFederation"; value: string; isUrlEncoded: boolean }
+  | { kind: "Embedded"; name: string; value: string; isSamlRequest: boolean }
   | {
       kind: "Parameter";
       name: string;
@@ -75,7 +71,7 @@ export type SamlMessageInfo = {
   signatureAlgorithm: Maybe<string>;
   digestAlgorithm: Maybe<string>;
   encryptionMethod: Maybe<string>;
-  certificate: Maybe<string>;
+  certificates: string[];
   assertionCount: number;
   encryptedAssertionCount: number;
   signedElements: SignedElement[];

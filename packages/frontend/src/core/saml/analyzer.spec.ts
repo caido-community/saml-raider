@@ -273,3 +273,99 @@ describe("duplicate SAML parameters, an HTTP parameter pollution vector", () => 
     });
   });
 });
+
+describe("messages embedded in something that is not a SAML binding", () => {
+  it("finds a response carried inside an application specific stream", () => {
+    const raw = buildRawRequest(
+      "HTTP/1.1 200 OK",
+      ["Content-Type: text/x-component"],
+      "2:T182c,?SAMLResponse=PHNhbWwycDpSZXNwb25zZT48L3NhbWwycDpSZXNwb25zZT4%3D\n0:{}",
+    );
+
+    expect(analyzeSamlMessage(raw)).toStrictEqual({
+      kind: "Embedded",
+      name: "SAMLResponse",
+      value: "PHNhbWwycDpSZXNwb25zZT48L3NhbWwycDpSZXNwb25zZT4%3D",
+      isSamlRequest: false,
+    });
+  });
+
+  it("prefers a real binding over an embedded match", () => {
+    const raw = buildRawRequest(
+      "POST /acs HTTP/1.1",
+      [FORM_CONTENT_TYPE],
+      "SAMLResponse=cHJvcGVy",
+    );
+
+    expect(analyzeSamlMessage(raw).kind).toBe("Parameter");
+  });
+
+  it("stops the value at the first delimiter rather than swallowing the stream", () => {
+    const raw = buildRawRequest(
+      "HTTP/1.1 200 OK",
+      ["Content-Type: text/plain"],
+      'x?SAMLRequest=YWJj&RelayState=zzz"tail',
+    );
+    const analysis = analyzeSamlMessage(raw);
+    if (analysis.kind !== "Embedded")
+      throw new Error("expected an embedded hit");
+
+    expect(analysis.value).toBe("YWJj");
+    expect(analysis.isSamlRequest).toBe(true);
+  });
+
+  it("still reports ordinary traffic as not SAML", () => {
+    const raw = buildRawRequest(
+      "HTTP/1.1 200 OK",
+      ["Content-Type: text/html"],
+      "<html>nothing here</html>",
+    );
+
+    expect(analyzeSamlMessage(raw)).toStrictEqual({ kind: "NotSaml" });
+  });
+});
+
+describe("not mistaking a header for the message", () => {
+  it("ignores a redirect binding URL echoed in a Referer header", () => {
+    const raw = buildRawRequest(
+      "GET /dashboard HTTP/1.1",
+      [
+        "Host: sp.example",
+        "Referer: https://idp.example/sso?SAMLRequest=fZJNbxAAAA&RelayState=x",
+      ],
+      "",
+    );
+
+    expect(analyzeSamlMessage(raw)).toStrictEqual({ kind: "NotSaml" });
+  });
+
+  it("ignores a SAML parameter stored in a cookie", () => {
+    const raw = buildRawRequest(
+      "GET /app HTTP/1.1",
+      ["Host: sp.example", "Cookie: last=SAMLResponse=PHNhbWw"],
+      "",
+    );
+
+    expect(analyzeSamlMessage(raw)).toStrictEqual({ kind: "NotSaml" });
+  });
+
+  it("still finds a message embedded in the body", () => {
+    const raw = buildRawRequest(
+      "HTTP/1.1 200 OK",
+      ["Content-Type: text/x-component"],
+      "2:T182c,?SAMLResponse=PHNhbWw\n0:{}",
+    );
+
+    expect(analyzeSamlMessage(raw).kind).toBe("Embedded");
+  });
+
+  it("still finds one in the query string of a request", () => {
+    const raw = buildRawRequest(
+      "GET /go?redirect=https://idp.example/sso?SAMLRequest=fZJN HTTP/1.1",
+      ["Host: idp.example"],
+      "",
+    );
+
+    expect(analyzeSamlMessage(raw).kind).toBe("Embedded");
+  });
+});

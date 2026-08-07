@@ -7,6 +7,7 @@ import { defineComponent, h, ref } from "vue";
 import { type MessageSource } from "./source";
 import { type MessageForm, useForm } from "./useForm";
 
+import { buildEditorDouble } from "@/tests/editor";
 import {
   buildRawRequest,
   FORM_CONTENT_TYPE,
@@ -45,7 +46,13 @@ const mountForm = (options: {
 
   const Host = defineComponent({
     setup() {
-      created.push(useForm(() => ({ kind, raw: raw.value })));
+      created.push(
+        useForm(() =>
+          kind === "WritableRequest"
+            ? { kind, raw: raw.value, view: buildEditorDouble().view }
+            : { kind, raw: raw.value },
+        ),
+      );
       return () => h("div");
     },
   });
@@ -170,5 +177,34 @@ describe("failures reach the view state", () => {
     });
 
     await waitForNotice(form, "DOCTYPE");
+  });
+});
+
+describe("choosing how the message is shown", () => {
+  it("opens on the message itself rather than an inner panel", () => {
+    const { form } = mountForm({ request: postBinding(MINIMAL_RESPONSE) });
+
+    expect(form.panel.value).toBe("Message");
+    expect(form.format.value).toBe("Raw");
+  });
+
+  it("shows the exact bytes by default and prettifies only on request", () => {
+    const { form } = mountForm({ request: postBinding(MINIMAL_RESPONSE) });
+    const state = form.state.value;
+    if (state.kind !== "Message") throw new Error("did not decode");
+
+    expect(form.messageText.value).toBe(state.xml);
+
+    form.format.value = "Pretty";
+
+    expect(form.messageText.value).toBe(state.prettyXml);
+    expect(form.messageText.value).not.toBe(state.xml);
+  });
+
+  it("shows nothing when there is no message to format", () => {
+    const { form } = mountForm({ request: NON_SAML });
+
+    expect(form.state.value.kind).toBe("Notice");
+    expect(form.messageText.value).toBe("");
   });
 });

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { decodeBase64, encodeBase64 } from "./base64";
 
+import { isAbsent } from "@/utils";
+
 describe("encodeBase64", () => {
   it("encodes ascii", () => {
     expect(encodeBase64(new TextEncoder().encode("Hello"))).toBe("SGVsbG8=");
@@ -21,7 +23,7 @@ describe("decodeBase64", () => {
   it("decodes ascii", () => {
     const decoded = decodeBase64("SGVsbG8=");
     expect(
-      decoded === undefined ? undefined : new TextDecoder().decode(decoded),
+      isAbsent(decoded) ? undefined : new TextDecoder().decode(decoded),
     ).toBe("Hello");
   });
 

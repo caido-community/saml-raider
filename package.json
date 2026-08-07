@@ -12,8 +12,15 @@
     "knip": "knip",
     "build": "caido-dev build",
     "watch": "caido-dev watch",
-    "test": "vitest run"
+    "test": "vitest run",
+    "goldens": "node scripts/regenerate-c14n-goldens.mjs"
   },
+  "browserslist": [
+    "chrome >= 120",
+    "edge >= 120",
+    "firefox >= 120",
+    "safari >= 17"
+  ],
   "devDependencies": {
     "@caido-community/dev": "0.1.7",
     "@caido/eslint-config": "0.10.0",
