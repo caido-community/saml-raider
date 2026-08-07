@@ -1,0 +1,1 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="_r1"><Issuer xmlns="urn:oasis:names:tc:SAML:2.0:assertion">i</Issuer></samlp:Response></soap:Body></soap:Envelope>

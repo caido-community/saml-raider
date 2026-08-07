@@ -119,5 +119,32 @@ export const backupSchema = z.object({
   ),
 });
 
+const MAX_SIGNED_INFO_CHARACTERS = 1_000_000;
+
+export const signSignedInfoSchema = z.object({
+  certificateId: identifierSchema,
+  signedInfoBase64: z
+    .string()
+    .min(1)
+    .max(MAX_SIGNED_INFO_CHARACTERS)
+    .regex(/^[A-Za-z0-9+/=\s]+$/, "expected base64"),
+  signatureAlgorithm: z.enum(["SHA-1", "SHA-256", "SHA-384", "SHA-512"]),
+});
+
+export const verifySignatureSchema = z.object({
+  certificatePem,
+  signedInfoBase64: z
+    .string()
+    .min(1)
+    .max(MAX_SIGNED_INFO_CHARACTERS)
+    .regex(/^[A-Za-z0-9+/=\s]+$/, "expected base64"),
+  signatureBase64: z
+    .string()
+    .min(1)
+    .max(MAX_SIGNED_INFO_CHARACTERS)
+    .regex(/^[A-Za-z0-9+/=\s]+$/, "expected base64"),
+  signatureAlgorithm: z.enum(["SHA-1", "SHA-256", "SHA-384", "SHA-512"]),
+});
+
 export const readIssue = (error: z.ZodError): string =>
   error.issues[0]?.message ?? "the request was rejected";

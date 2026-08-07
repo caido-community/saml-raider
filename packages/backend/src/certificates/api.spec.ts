@@ -1,3 +1,8 @@
+import { execFileSync } from "child_process";
+import { mkdtempSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
 import { type Result } from "shared";
 import { describe, expect, it } from "vitest";
 
@@ -769,5 +774,198 @@ describe("the endpoints that can return key material", () => {
     expect(withKeys).toContain("PRIVATE KEY");
     expect(listed).not.toContain("PRIVATE KEY");
     expect(renamed).not.toContain("PRIVATE KEY");
+  });
+});
+
+describe("signing SignedInfo", () => {
+  const storeLeafWithKey = async () => {
+    const built = buildApi();
+    await built.api.importCertificates({
+      encoded: LEAF_CERTIFICATE_PEM,
+      source: "Imported",
+    });
+    await built.api.importPrivateKey({
+      certificateId: FINGERPRINTS_SHA256.leaf,
+      privateKeyPem: LEAF_KEY_PEM,
+    });
+    return built;
+  };
+
+  it("produces a signature the certificate's public key verifies", async () => {
+    const { api } = await storeLeafWithKey();
+    const content = Buffer.from("<SignedInfo/>", "utf8").toString("base64");
+
+    const signature = expectOk(
+      await api.signSignedInfo({
+        certificateId: FINGERPRINTS_SHA256.leaf,
+        signedInfoBase64: content,
+        signatureAlgorithm: "SHA-256",
+      }),
+    );
+
+    const directory = mkdtempSync(join(tmpdir(), "saml-raider-sign-"));
+    const contentPath = join(directory, "content");
+    const signaturePath = join(directory, "sig");
+    const certificatePath = join(directory, "cert.pem");
+    writeFileSync(contentPath, Buffer.from(content, "base64"));
+    writeFileSync(signaturePath, Buffer.from(signature, "base64"));
+    writeFileSync(certificatePath, LEAF_CERTIFICATE_PEM);
+
+    const publicKey = join(directory, "pub.pem");
+    writeFileSync(
+      publicKey,
+      execFileSync(
+        "openssl",
+        ["x509", "-in", certificatePath, "-noout", "-pubkey"],
+        { encoding: "utf8" },
+      ),
+    );
+
+    const verdict = execFileSync(
+      "openssl",
+      [
+        "dgst",
+        "-sha256",
+        "-verify",
+        publicKey,
+        "-signature",
+        signaturePath,
+        contentPath,
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(verdict.trim()).toBe("Verified OK");
+  });
+
+  it("refuses when the certificate has no private key", async () => {
+    const { api } = buildApi();
+    await api.importCertificates({
+      encoded: LEAF_CERTIFICATE_PEM,
+      source: "Imported",
+    });
+
+    const result = await api.signSignedInfo({
+      certificateId: FINGERPRINTS_SHA256.leaf,
+      signedInfoBase64: "aGk=",
+      signatureAlgorithm: "SHA-256",
+    });
+
+    expect(result.kind).toBe("Error");
+  });
+
+  it("refuses an identifier that is not a stored certificate", async () => {
+    const { api } = await storeLeafWithKey();
+
+    const result = await api.signSignedInfo({
+      certificateId: "not-an-id",
+      signedInfoBase64: "aGk=",
+      signatureAlgorithm: "SHA-256",
+    });
+
+    expect(result.kind).toBe("Error");
+  });
+
+  it("never returns key material", async () => {
+    const { api } = await storeLeafWithKey();
+
+    const result = await api.signSignedInfo({
+      certificateId: FINGERPRINTS_SHA256.leaf,
+      signedInfoBase64: "aGk=",
+      signatureAlgorithm: "SHA-256",
+    });
+
+    expect(JSON.stringify(result)).not.toContain("PRIVATE KEY");
+  });
+});
+
+describe("verifying a signature", () => {
+  const signAndVerify = async (
+    tamper: (value: string) => string = (value) => value,
+  ) => {
+    const { api } = buildApi();
+    await api.importCertificates({
+      encoded: LEAF_CERTIFICATE_PEM,
+      source: "Imported",
+    });
+    await api.importPrivateKey({
+      certificateId: FINGERPRINTS_SHA256.leaf,
+      privateKeyPem: LEAF_KEY_PEM,
+    });
+
+    const signedInfoBase64 = Buffer.from("<SignedInfo/>", "utf8").toString(
+      "base64",
+    );
+    const signature = expectOk(
+      await api.signSignedInfo({
+        certificateId: FINGERPRINTS_SHA256.leaf,
+        signedInfoBase64,
+        signatureAlgorithm: "SHA-256",
+      }),
+    );
+
+    return api.verifySignature({
+      certificatePem: LEAF_CERTIFICATE_PEM,
+      signedInfoBase64: tamper(signedInfoBase64),
+      signatureBase64: signature,
+      signatureAlgorithm: "SHA-256",
+    });
+  };
+
+  it("accepts what it just signed", async () => {
+    expect(await signAndVerify()).toEqual({ kind: "Ok", value: true });
+  });
+
+  it("rejects content that changed after signing", async () => {
+    const tampered = Buffer.from("<SignedInfo/> ", "utf8").toString("base64");
+
+    expect(await signAndVerify(() => tampered)).toEqual({
+      kind: "Ok",
+      value: false,
+    });
+  });
+
+  it("rejects a signature made by a different key", async () => {
+    const { api } = buildApi();
+    await api.importCertificates({
+      encoded: LEAF_CERTIFICATE_PEM,
+      source: "Imported",
+    });
+    await api.importPrivateKey({
+      certificateId: FINGERPRINTS_SHA256.leaf,
+      privateKeyPem: LEAF_KEY_PEM,
+    });
+    const signedInfoBase64 = Buffer.from("<SignedInfo/>", "utf8").toString(
+      "base64",
+    );
+    const signature = expectOk(
+      await api.signSignedInfo({
+        certificateId: FINGERPRINTS_SHA256.leaf,
+        signedInfoBase64,
+        signatureAlgorithm: "SHA-256",
+      }),
+    );
+
+    const result = await api.verifySignature({
+      certificatePem: INTERMEDIATE_CERTIFICATE_PEM,
+      signedInfoBase64,
+      signatureBase64: signature,
+      signatureAlgorithm: "SHA-256",
+    });
+
+    expect(result).toEqual({ kind: "Ok", value: false });
+  });
+
+  it("refuses a certificate it cannot read", async () => {
+    const { api } = buildApi();
+
+    const result = await api.verifySignature({
+      certificatePem: MALFORMED_CERTIFICATE_PEM,
+      signedInfoBase64: "aGk=",
+      signatureBase64: "aGk=",
+      signatureAlgorithm: "SHA-256",
+    });
+
+    expect(result.kind).toBe("Error");
   });
 });

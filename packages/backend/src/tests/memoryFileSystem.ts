@@ -4,12 +4,14 @@ export type MemoryFileSystem = FileSystem & {
   files: Map<string, { content: string; mode: number }>;
   failing: Set<string>;
   failingWrites: Set<string>;
+  reads: { count: number };
 };
 
 export const buildMemoryFileSystem = (): MemoryFileSystem => {
   const files = new Map<string, { content: string; mode: number }>();
   const failing = new Set<string>();
   const failingWrites = new Set<string>();
+  const reads = { count: 0 };
 
   const fails = (path: string): boolean => failing.has(path);
 
@@ -17,6 +19,7 @@ export const buildMemoryFileSystem = (): MemoryFileSystem => {
     files,
     failing,
     failingWrites,
+    reads,
 
     makeDirectory: (path) =>
       Promise.resolve(
@@ -26,6 +29,7 @@ export const buildMemoryFileSystem = (): MemoryFileSystem => {
       ),
 
     readTextFile: (path) => {
+      reads.count += 1;
       if (fails(path)) {
         return Promise.resolve({
           kind: "Failed" as const,

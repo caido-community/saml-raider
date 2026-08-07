@@ -4,18 +4,17 @@ import Dialog from "primevue/dialog";
 
 import { useForm } from "./useForm";
 
-import { buildCertificateService } from "@/services/certificates";
-import { type FrontendSDK } from "@/types";
+import { type CertificateService } from "@/services/certificates";
 import { formatHex } from "@/utils";
 
 defineOptions({ name: "EmbeddedCertificates" });
 
-const { certificates, sdk } = defineProps<{
+const { certificates, service } = defineProps<{
   certificates: string[];
-  sdk: FrontendSDK;
+  service: CertificateService;
 }>();
 
-const form = useForm(() => certificates, buildCertificateService(sdk));
+const form = useForm(() => certificates, service);
 </script>
 
 <template>

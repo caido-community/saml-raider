@@ -1,0 +1,1 @@
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns="urn:oasis:names:tc:SAML:2.0:assertion" ID="_r1"><Issuer>http://idp.example.com</Issuer><Assertion ID="_a1"><Subject><NameID>bob@example.com</NameID></Subject></Assertion></samlp:Response>

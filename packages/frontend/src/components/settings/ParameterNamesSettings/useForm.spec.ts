@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { err, ok, type ParameterNames } from "shared";
+import { err, type HighlightSettings, ok, type ParameterNames } from "shared";
 import { describe, expect, it } from "vitest";
 
 import { useForm } from "./useForm";
@@ -28,6 +28,10 @@ const buildPreferenceDouble = (
           ? ok(stored)
           : err<ParameterNames>(loadFailure),
       ),
+    getHighlightSettings: () =>
+      Promise.resolve(ok({ isEnabled: false, color: "blue" })),
+    setHighlightSettings: (input: HighlightSettings) =>
+      Promise.resolve(ok(input)),
     setParameterNames: (input) => {
       writes.push(input);
       if (failWith !== undefined) {

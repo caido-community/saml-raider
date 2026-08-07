@@ -10,6 +10,19 @@ import { createApp, defineComponent, h, markRaw } from "vue";
 
 import { MessageView } from "./components/samlMessage/MessageView";
 import { analyzeSamlMessage, applyParameterNames, isSamlMessage } from "./core";
+import {
+  buildCertificateService,
+  setCertificateService,
+} from "./services/certificates";
+import {
+  applyHighlightSettings,
+  buildHighlightService,
+} from "./services/highlight";
+import {
+  forgetImportedCertificates,
+  trackImportedCertificates,
+} from "./services/imported";
+import { setNotificationSink } from "./services/notifications";
 import { buildPreferenceService } from "./services/preferences";
 import "./styles/index.css";
 import type { FrontendSDK } from "./types";
@@ -27,7 +40,7 @@ const registerViewModes = (sdk: FrontendSDK) => {
         setup:
           (_props, { attrs }) =>
           () =>
-            h(MessageView, { ...attrs, sdk: markRaw(sdk) }),
+            h(MessageView, { ...attrs }),
       }),
     ),
   };
@@ -61,13 +74,33 @@ const registerViewModes = (sdk: FrontendSDK) => {
   sdk.findings.addResponseViewMode(response);
 };
 
-const loadParameterNames = async (sdk: FrontendSDK) => {
-  const result = await buildPreferenceService(sdk).getParameterNames();
-  if (result.kind === "Ok") applyParameterNames(result.value);
+const loadPreferences = async (sdk: FrontendSDK) => {
+  const service = buildPreferenceService(sdk);
+
+  const names = await service.getParameterNames();
+  if (names.kind === "Ok") applyParameterNames(names.value);
+
+  const highlight = await service.getHighlightSettings();
+  if (highlight.kind === "Ok") applyHighlightSettings(highlight.value);
+};
+
+const registerHighlighting = (sdk: FrontendSDK) => {
+  const highlight = buildHighlightService(sdk);
+
+  sdk.backend.onEvent("samlDetected", (requestId) => {
+    void highlight.colorRequest(requestId);
+  });
 };
 
 export const init = (sdk: FrontendSDK) => {
-  void loadParameterNames(sdk);
+  setCertificateService(buildCertificateService(sdk));
+  setNotificationSink({
+    showSuccess: (message) =>
+      sdk.window.showToast(message, { variant: "success" }),
+    showError: (message) => sdk.window.showToast(message, { variant: "error" }),
+  });
+  void loadPreferences(sdk);
+  registerHighlighting(sdk);
 
   const app = createApp(App, { sdk: markRaw(sdk) });
 
@@ -92,8 +125,14 @@ export const init = (sdk: FrontendSDK) => {
     body: root,
   });
 
-  sdk.sidebar.registerItem("SAML Raider", `/${__PLUGIN_ID__}`, {
-    icon: "fas fa-certificate",
+  trackImportedCertificates(
+    sdk.sidebar.registerItem("SAML Raider", `/${__PLUGIN_ID__}`, {
+      icon: "fas fa-certificate",
+    }),
+  );
+
+  sdk.navigation.onPageChange((event) => {
+    if (event.path === `/${__PLUGIN_ID__}`) forgetImportedCertificates();
   });
 
   registerViewModes(sdk);

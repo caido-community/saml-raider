@@ -9,7 +9,9 @@ import {
   type ImportPrivateKeyInput,
   ok,
   type Result,
+  type SignSignedInfoInput,
   type UpdateCertificateLabelInput,
+  type VerifySignatureInput,
 } from "shared";
 
 import { buildGenerateApi } from "./generateApi";
@@ -23,10 +25,13 @@ import {
   importPrivateKeySchema,
   MAX_BACKUP_CHARACTERS,
   readIssue,
+  signSignedInfoSchema,
   STORE_VERSION,
   type StoredCertificate,
   updateLabelSchema,
+  verifySignatureSchema,
 } from "./schema";
+import { signBytes, verifyBytes } from "./signing";
 import { type CertificateStore } from "./store";
 import { buildTransaction, type Clock, type Incoming } from "./transaction";
 
@@ -52,6 +57,15 @@ const readCertificateInputs = (
 export const buildCertificateApi = (store: CertificateStore, now: Clock) => {
   const transaction = buildTransaction(store, now);
   const { serialise, listAll, commit, findById, addCertificates } = transaction;
+
+  const readStoredKey = async (id: string): Promise<Result<string>> => {
+    const pem = await store.readPrivateKeyPem(id);
+    if (pem.kind === "Error") return pem;
+
+    return pem.value === undefined
+      ? err("No private key is stored for that certificate.")
+      : ok(pem.value);
+  };
 
   return {
     ...buildGenerateApi(store, transaction),
@@ -231,12 +245,39 @@ export const buildCertificateApi = (store: CertificateStore, now: Clock) => {
       const parsed = identifierSchema.safeParse(id);
       if (!parsed.success) return err(readIssue(parsed.error));
 
-      const pem = await store.readPrivateKeyPem(parsed.data);
+      return readStoredKey(parsed.data);
+    },
+
+    signSignedInfo: async (
+      input: SignSignedInfoInput,
+    ): Promise<Result<string>> => {
+      const parsed = signSignedInfoSchema.safeParse(input);
+      if (!parsed.success) return err(readIssue(parsed.error));
+
+      const pem = await readStoredKey(parsed.data.certificateId);
       if (pem.kind === "Error") return pem;
 
-      return pem.value === undefined
-        ? err("No private key is stored for that certificate.")
-        : ok(pem.value);
+      return signBytes({
+        privateKeyPem: pem.value,
+        contentBase64: parsed.data.signedInfoBase64,
+        algorithm: parsed.data.signatureAlgorithm,
+      });
+    },
+
+    verifySignature: (
+      input: VerifySignatureInput,
+    ): Promise<Result<boolean>> => {
+      const parsed = verifySignatureSchema.safeParse(input);
+      if (!parsed.success) return Promise.resolve(err(readIssue(parsed.error)));
+
+      return Promise.resolve(
+        verifyBytes({
+          certificatePem: parsed.data.certificatePem,
+          contentBase64: parsed.data.signedInfoBase64,
+          signatureBase64: parsed.data.signatureBase64,
+          algorithm: parsed.data.signatureAlgorithm,
+        }),
+      );
     },
   };
 };

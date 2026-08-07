@@ -27,11 +27,19 @@ export type {
   ImportedCertificate,
   ImportPrivateKeyInput,
   SignatureAlgorithm,
+  SignSignedInfoInput,
+  VerifySignatureInput,
   UnsupportedExtension,
   UpdateCertificateLabelInput,
 } from "./certificates";
 export type { Events } from "./events";
-export { DEFAULT_PARAMETER_NAMES, type ParameterNames } from "./preferences";
+export {
+  DEFAULT_HIGHLIGHT_SETTINGS,
+  DEFAULT_PARAMETER_NAMES,
+  HIGHLIGHT_COLORS,
+  type HighlightSettings,
+  type ParameterNames,
+} from "./preferences";
 export { readErrorMessage } from "./errors";
 export { buildPem } from "./pem";
 export { err, ok, type Result } from "./result";

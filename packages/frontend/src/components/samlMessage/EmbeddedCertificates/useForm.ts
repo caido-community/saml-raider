@@ -1,6 +1,8 @@
 import { computed, ref } from "vue";
 
 import { type CertificateService } from "@/services/certificates";
+import { rememberImportedCertificates } from "@/services/imported";
+import { notify } from "@/services/notifications";
 import { decodeBase64, isAbsent, type Maybe } from "@/utils";
 
 type EmbeddedCertificate = {
@@ -15,8 +17,7 @@ type DialogState =
   | { kind: "Loading" }
   | { kind: "Reviewing"; rows: EmbeddedCertificate[] }
   | { kind: "Sending"; rows: EmbeddedCertificate[] }
-  | { kind: "Failed"; rows: EmbeddedCertificate[]; message: string }
-  | { kind: "Sent"; rows: EmbeddedCertificate[]; message: string };
+  | { kind: "Failed"; rows: EmbeddedCertificate[]; message: string };
 
 const markSent = (
   rows: EmbeddedCertificate[],
@@ -74,9 +75,7 @@ export const useForm = (
     ),
 
     message: computed(() =>
-      state.value.kind === "Failed" || state.value.kind === "Sent"
-        ? state.value.message
-        : "",
+      state.value.kind === "Failed" ? state.value.message : "",
     ),
 
     newCount: computed(
@@ -124,6 +123,11 @@ export const useForm = (
       const sent = new Set<string>();
       for (const row of pending) {
         const result = await service.importExtractedCertificate(row.base64);
+        if (result.kind === "Ok") {
+          sent.add(row.fingerprintSha256);
+          rememberImportedCertificates(1);
+        }
+
         if (run !== generation) return;
         if (result.kind === "Error") {
           state.value = {
@@ -133,17 +137,14 @@ export const useForm = (
           };
           return;
         }
-        sent.add(row.fingerprintSha256);
       }
 
-      state.value = {
-        kind: "Sent",
-        rows: markSent(current, sent),
-        message:
-          sent.size === 0
-            ? "Every certificate in this message was already stored."
-            : `Sent ${sent.size} certificate${sent.size === 1 ? "" : "s"} to the certificate manager.`,
-      };
+      close();
+      notify().showSuccess(
+        sent.size === 0
+          ? "Every certificate in this message was already stored."
+          : `Sent ${sent.size} certificate${sent.size === 1 ? "" : "s"} to the certificate manager.`,
+      );
     },
   };
 };

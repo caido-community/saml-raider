@@ -90,6 +90,8 @@ export const buildServiceDouble = (
     cloneChain: () => Promise.resolve(fail() ?? ok([])),
     exportBackup: () => Promise.resolve(fail() ?? ok("{}")),
     importBackup: () => Promise.resolve(fail() ?? ok([])),
+    signSignedInfo: () => Promise.resolve(fail<string>() ?? ok("c2ln")),
+    verifySignature: () => Promise.resolve(fail<boolean>() ?? ok(true)),
     readPrivateKeyPem: (id) => {
       calls.readPrivateKeyPem.push(id);
       return Promise.resolve(

@@ -132,3 +132,16 @@ export type CertificateBackup = {
 export type ExportBackupInput = {
   includePrivateKeys: boolean;
 };
+
+export type SignSignedInfoInput = {
+  certificateId: string;
+  signedInfoBase64: string;
+  signatureAlgorithm: SignatureAlgorithm;
+};
+
+export type VerifySignatureInput = {
+  certificatePem: string;
+  signedInfoBase64: string;
+  signatureBase64: string;
+  signatureAlgorithm: SignatureAlgorithm;
+};

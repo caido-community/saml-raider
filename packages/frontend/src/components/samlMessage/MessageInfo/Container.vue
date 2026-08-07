@@ -2,24 +2,21 @@
 import Group from "./Group.vue";
 import { useForm } from "./useForm";
 
-import { XmlView } from "@/components/common/XmlView";
 import { EmbeddedCertificates } from "@/components/samlMessage/EmbeddedCertificates";
 import { type Compression, type SamlMessageInfo } from "@/core";
-import { type FrontendSDK } from "@/types";
+import { type CertificateService } from "@/services/certificates";
 import { isPresent, type Maybe } from "@/utils";
 
 defineOptions({ name: "MessageInfo" });
 
 const {
   info,
-  prettyXml,
   compression,
-  sdk = undefined,
+  service = undefined,
 } = defineProps<{
   info: SamlMessageInfo;
-  prettyXml: string;
   compression: Compression;
-  sdk?: Maybe<FrontendSDK>;
+  service?: Maybe<CertificateService>;
 }>();
 
 const { rows } = useForm(
@@ -40,22 +37,9 @@ const { rows } = useForm(
     </div>
 
     <EmbeddedCertificates
-      v-if="info.certificates.length > 0 && isPresent(sdk)"
+      v-if="info.certificates.length > 0 && isPresent(service)"
       :certificates="info.certificates"
-      :sdk="sdk"
+      :service="service"
     />
-
-    <section
-      class="min-w-0 flex flex-col border border-surface-700 rounded overflow-hidden"
-    >
-      <header
-        class="px-2 py-1 text-xs font-bold uppercase tracking-wide text-surface-300 bg-surface-800/60"
-      >
-        Parsed &amp; Prettified
-      </header>
-      <div class="min-w-0">
-        <XmlView :content="prettyXml" />
-      </div>
-    </section>
   </div>
 </template>
