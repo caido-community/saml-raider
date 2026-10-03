@@ -24,14 +24,14 @@ It also manages the certificates used for re-signing: import, generate self sign
 
 ### Installation [Recommended]
 
-1. Open Caido, navigate to the `Plugins` sidebar page and then to the `Community Store` tab
+1. Open Caido, navigate to the `Plugins` sidebar page
 2. Find `SAML Raider` and click Install
 3. Done! 🎉
 
 ### Installation [Manual]
 
 1. Go to the [SAML Raider Releases tab](https://github.com/caido-community/saml-raider/releases) and download the latest `plugin_package.zip` file
-2. In your Caido instance, navigate to the `Plugins` page, click `Install` and select the downloaded `plugin_package.zip` file
+2. In your Caido instance, navigate to the `Plugins` page, click `Install Package` and select the downloaded `plugin_package.zip` file
 3. Done! 🎉
 
 ## Using it
